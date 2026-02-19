@@ -1,4 +1,4 @@
-# PrepStock（防災物資庫存管理）PRD（Global Overview）
+# Stockmore 《綢繆》（防災物資庫存管理）PRD（Global Overview）
 
 > 本文件維持「全局概覽」角色：描述產品目標、MVP 範圍、用例與全局驗收。每個功能細節應拆到 `docs/features/*.md`。
 
@@ -312,7 +312,10 @@ C) **純本地工作（Local-first / On-device）— 後續功能**
 * 使用者在電腦或手機上運行本地後端（前端無感）。
 * 透過匯出/匯入資料庫實現資料轉移。
 * 後端邏輯需能被搬移到使用者裝置上運行（或以等價方式重用同一套 domain）。
+* 可依「滿足單位」彙總統計（例如：乾糧總單位、飲水總單位）以協助儲
 
 ## 9. 仍待釐清（Questions to Confirm）
 
-* （目前無）
+* Q1: MVP 預設通知開關要預設開或關？（建議：預設關，使用者明確啟用後才寄送。）
+* Q2: 低庫存的聚合口徑是否以 warehouse 為範圍（建議：是），以及是否要排除 quantity=0 的批次？
+* Q3: Email 寄送服務選型（Supabase/Resend/SMTP）與測試環境的 mock 策略。

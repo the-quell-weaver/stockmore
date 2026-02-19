@@ -64,9 +64,9 @@
 
 ## 6. Data Model Impact
 ### 6.1 Entities touched
-- Tables: `auth.users`（Supabase）、`orgs`、`warehouses`、`org_memberships`（MVP 可簡化但建議先建）、`user_profiles`（可選）
+- Tables: `auth.users`（Supabase）、`orgs`、`warehouses`、`org_memberships`（MVP 會建立；bootstrap 寫入預設 role=owner）、`user_profiles`（可選）
 - New columns (if any): `orgs.created_by`, `warehouses.is_default`（或用 unique constraint 保證 1 筆）
-- New tables (if any): 無（若未先建 memberships，則 UC-01 需要補上）
+- New tables (if any): `org_memberships`（若 repo 尚未建立；MVP 需要，以鋪路共享/角色）
 
 ### 6.2 Constraints & invariants
 - 每個 org 至少 1 個 warehouse。
@@ -135,6 +135,5 @@
 - 回滾策略：保留資料（不刪除），僅下線入口。
 
 ## 15. Open Questions
-- Q1: MVP 是否要先建立 org_memberships 表（建議：要，為未來共享/角色鋪路）？
-- Q2: 預設 warehouse 命名策略（例如「我的倉庫」）是否要可在 UI 修改（後續功能）？
-
+- （已釐清）MVP 先建立 `org_memberships` 以鋪路共享/角色；但 MVP 不配置相應 UI/商業邏輯，僅在 bootstrap 寫入預設值（role=owner 等價）。
+- （Backlog）預設 warehouse 命名策略的 UI 修改為低優先需求，已記錄於 PRD 的 Backlog 章節。
