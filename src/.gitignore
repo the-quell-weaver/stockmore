@@ -43,3 +43,6 @@ next-env.d.ts
 
 # playwright auth state
 /playwright/.auth/
+
+# playwright test artifacts
+/test-results/
