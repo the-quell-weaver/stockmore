@@ -1,0 +1,74 @@
+name: CI
+
+on:
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+          cache-dependency-path: src/package-lock.json
+
+      - name: Setup Supabase CLI
+        uses: supabase/setup-cli@v1
+
+      - name: Install dependencies
+        working-directory: src
+        run: npm ci
+
+      - name: Lint
+        working-directory: src
+        run: npm run lint
+
+      - name: Typecheck
+        working-directory: src
+        run: npx tsc --noEmit
+
+      - name: Start Supabase local stack
+        run: supabase start
+
+      - name: Reset Supabase DB
+        run: supabase db reset
+
+      - name: Vitest unit
+        working-directory: src
+        run: npx -y vitest run --passWithNoTests
+
+      - name: Vitest integration
+        working-directory: src
+        run: npx -y vitest run --passWithNoTests
+
+      - name: Build Next.js app
+        working-directory: src
+        run: npm run build
+
+      - name: Install Playwright browsers
+        working-directory: src
+        run: npx -y playwright install --with-deps chromium
+
+      - name: Run Playwright E2E
+        working-directory: src
+        env:
+          PLAYWRIGHT_BASE_URL: http://127.0.0.1:5566
+        run: |
+          npx next start -p 5566 &
+          APP_PID=$!
+          trap "kill $APP_PID" EXIT
+
+          for i in {1..30}; do
+            if curl -fsS http://127.0.0.1:5566 >/dev/null; then
+              break
+            fi
+            sleep 1
+          done
+
+          npx -y playwright test --pass-with-no-tests
