@@ -117,6 +117,15 @@
 * 測結果（資料狀態 / response / UI 狀態）
 * 少測內部私有函式（除非是純函式且有必要）
 
+### 5.3 Integration tests（需要 DB）規範
+
+- 我們的 CI 會在每次 PR 先執行 supabase start + supabase db reset，確保資料庫 schema（含 migrations/RLS/policies）可從空資料庫重建。
+- 測試資料不依賴 seed：每個 integration test 應在測試內自行建立所需資料（Arrange），並在測試結束後清除（Cleanup）。
+- 清理策略建議：
+  - 優先使用 transaction rollback（若測試框架/連線方式支援）。
+  - 或在 afterEach/afterAll 以 TRUNCATE ... RESTART IDENTITY CASCADE 清理測試涉及的表。
+  - 測試之間不得共享狀態，確保可平行執行與可重跑。
+
 ## 6. DB 變更（Migrations / RLS）
 
 * 任何 schema 變更都要 migration。
