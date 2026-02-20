@@ -5,16 +5,21 @@
 ## 0. 版本與變更範圍
 
 - [ ] 本次 release 的 PRs 都已合併至 main。
+- [ ] （CI 對齊）確認 PR 階段的 `.github/workflows/ci.yml` 已通過（lint/typecheck/unit/integration/build/e2e）。
 - [ ] migrations 已合併，且本機/CI 能從空 DB 重建成功。
 - [ ] 有對應的 feature 文件（docs/features/uc_0X_*.md）更新。
 
-## 1. 環境變數（Vercel）
+## 1. 環境變數與 Secrets 命名
 
-**Preview + Production 都要檢查**：
+**GitHub Actions（CI/CD）**：
+- [ ] `SUPABASE_STAGING_DB_URL` 已設定（staging migrations / 驗證用）。
+- [ ] `SUPABASE_PROD_DB_URL` 已設定（production migrations / 驗證用）。
+
+**Vercel（Preview + Production）**：
 - [ ] `NEXT_PUBLIC_SUPABASE_URL`
 - [ ] `NEXT_PUBLIC_SUPABASE_ANON_KEY`
-- [ ] （若需要）`SUPABASE_SERVICE_ROLE_KEY`（僅 server-side 使用，不可曝露到 client）
 - [ ] （若有）任務排程/通知相關 env（例如 mail provider key）
+- [ ] 未設定 `SUPABASE_SERVICE_ROLE_KEY`（禁止放入 Vercel）。
 
 > 原則：Preview 與 Production 的 Supabase project 可分開，避免測試資料污染。
 
@@ -33,6 +38,19 @@
 - [ ] **所有表都已啟用 RLS**（multi-tenant 資料表必須）。
 - [ ] RLS policies 覆蓋：select/insert/update（以及必要時 delete 的明確禁止）。
 - [ ] 用兩個不同帳號快速驗證：A 看不到 B 的資料。
+
+
+## 3.1 GitHub `production` Environment Required Reviewers 設定
+
+1. 進入 GitHub repository。
+2. 點擊 **Settings**。
+3. 於左側選單進入 **Environments**。
+4. 選擇既有 `production` environment（若沒有就先建立）。
+5. 在 **Protection rules** 找到 **Required reviewers**。
+6. 新增需要核准 production 佈署的人員或團隊。
+7. 儲存設定後，用一個綁定 `environment: production` 的 workflow job 進行 dry run 驗證。
+
+> 注意：Required reviewers 只會保護「有綁定該 environment」的 job。請確認 release workflow 的 production job 明確宣告 `environment: production`，否則不會觸發 reviewer gate。
 
 ## 4. 關鍵功能 Smoke Test（手動 5 分鐘版）
 
@@ -58,4 +76,13 @@
 - [ ] Production 真實帳號登入測一次。
 - [ ] 至少建立 1 個 org/warehouse（若 UC-01 有 bootstrap）並確認不會重複建立。
 - [ ] 低庫存/到期提醒（若已上）確認排程與去重邏輯符合預期（可先用測試資料觸發）。
+
+
+## 8. Release 當天流程（Staging → Production）
+
+- [ ] 先確認 `Supabase Migrate Staging` workflow 綠燈（`push main` 且 `supabase/**` 變更時會自動執行 dry-run + apply）。
+- [ ] 確認 staging smoke test 結果正常。
+- [ ] 手動觸發 `Supabase Migrate Production` workflow（`workflow_dispatch`）。
+- [ ] 等待 `production` environment reviewer 核准後再執行 production job（該 job 需保留 `environment: production`）。
+- [ ] production 完成後，再做一次最小 smoke test（登入、主流程、關鍵頁面）。
 

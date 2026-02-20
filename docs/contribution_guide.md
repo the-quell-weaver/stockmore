@@ -119,17 +119,18 @@
 
 ### 5.3 Integration tests（需要 DB）規範
 
-- 我們的 CI 會在每次 PR 先執行 supabase start + supabase db reset，確保資料庫 schema（含 migrations/RLS/policies）可從空資料庫重建。
+- 目前 `.github/workflows/ci.yml`（`pull_request` 觸發）會先執行 `supabase start` + `supabase db reset`，再跑 `npm run supabase:local-env`、unit/integration tests，確保 schema（含 migrations/RLS/policies）可從空資料庫重建且測試在一致環境下執行。
 - 測試資料不依賴 seed：每個 integration test 應在測試內自行建立所需資料（Arrange），並在測試結束後清除（Cleanup）。
+- Arrange/Cleanup 應與測試同檔案或同測試套件內明確可見，禁止隱性共享全域測試資料。
 - 清理策略建議：
   - 優先使用 transaction rollback（若測試框架/連線方式支援）。
   - 或在 afterEach/afterAll 以 TRUNCATE ... RESTART IDENTITY CASCADE 清理測試涉及的表。
-  - 測試之間不得共享狀態，確保可平行執行與可重跑。
+- 測試之間不得共享狀態，確保可平行執行與可重跑。
 
 ## 6. DB 變更（Migrations / RLS）
 
-* 任何 schema 變更都要 migration。
-* 任何 schema / RLS / policy / index / constraint 變更，一律以 SQL migration 檔提交到 `supabase/migrations/*.sql`。
+* 任何 DB schema 變更都必須走 migration。
+* 任何 schema / RLS / policy / index / constraint 變更，一律以 SQL migration 檔提交到 `supabase/migrations/**`（實際檔案通常是 `supabase/migrations/*.sql`）。
 * 新表必須：
 
   * primary key / foreign keys
@@ -140,9 +141,9 @@
 * 如果資料不可逆：PR 必須寫明「回滾策略」（通常是停用 UI 入口，不回滾資料）。
 
 
-### 6.1 何時使用 `scripts/supabase/local-env.mjs`
+### 6.1 何時使用 `scripts/supabase/local-env.*`
 
-`node scripts/supabase/local-env.mjs` 的用途是把 local Supabase 的連線資訊同步到 app 的 `src/.env.local`。
+`scripts/supabase/local-env.*`（目前為 `scripts/supabase/local-env.mjs`）的用途是把 local Supabase 的連線資訊同步到 app 的 `src/.env.local`。
 
 建議在以下情境執行：
 
@@ -151,10 +152,10 @@
 - 執行需要 local Supabase 的 integration/e2e 測試前。
 - `.env.local` 被清空、遺失，或你懷疑內容過期時。
 
-標準流程：
+標準流程（與 CI 的 local env 生成步驟一致）：
 
 1. `supabase start`
-2. `node scripts/supabase/local-env.mjs`
+2. `npm run supabase:local-env`（等價於執行 `node scripts/supabase/local-env.mjs`）
 3. 確認 `src/.env.local` 至少包含：
    - `NEXT_PUBLIC_SUPABASE_URL`
    - `NEXT_PUBLIC_SUPABASE_ANON_KEY`
@@ -164,6 +165,7 @@
 
 - 腳本可重跑（idempotent），會更新既有 key 並補齊缺漏 key，不應產生重複。
 - 若 local Supabase 尚未啟動，腳本會提示先執行 `supabase start`。
+- 輸出檔固定為 `src/.env.local`，請勿將該檔提交到 git。
 
 ## 7. 設計與 UI（手機優先）
 
@@ -179,6 +181,11 @@
 ## 8. 安全、Secrets 與環境
 
 * 不要把 secrets 放進 repo（含測試）。
+* 命名規範：
+
+  * GitHub Actions（CI/CD）使用：`SUPABASE_STAGING_DB_URL`、`SUPABASE_PROD_DB_URL`。
+  * Vercel 僅設定：`NEXT_PUBLIC_SUPABASE_URL`、`NEXT_PUBLIC_SUPABASE_ANON_KEY`。
+  * 明確禁止把 `SUPABASE_SERVICE_ROLE_KEY` 放進 Vercel（避免高權限金鑰外溢風險）。
 * 需要新增 env vars 時：
 
   * 更新對應文件（例如 `RELEASE_CHECKLIST.md` 或 README 類文件）
