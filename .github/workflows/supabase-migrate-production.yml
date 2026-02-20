@@ -1,0 +1,26 @@
+name: Supabase Migrate Production
+
+on:
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment: production
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Supabase CLI
+        uses: supabase/setup-cli@v1
+
+      - name: Dry-run migration on production
+        run: supabase db push --db-url "$SUPABASE_PROD_DB_URL" --dry-run
+        env:
+          SUPABASE_PROD_DB_URL: ${{ secrets.SUPABASE_PROD_DB_URL }}
+
+      - name: Apply migration on production
+        run: supabase db push --db-url "$SUPABASE_PROD_DB_URL"
+        env:
+          SUPABASE_PROD_DB_URL: ${{ secrets.SUPABASE_PROD_DB_URL }}

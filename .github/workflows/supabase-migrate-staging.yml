@@ -1,0 +1,29 @@
+name: Supabase Migrate Staging
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'supabase/**'
+
+jobs:
+  migrate:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Supabase CLI
+        uses: supabase/setup-cli@v1
+
+      - name: Dry-run migration on staging
+        run: supabase db push --db-url "$SUPABASE_STAGING_DB_URL" --dry-run
+        env:
+          SUPABASE_STAGING_DB_URL: ${{ secrets.SUPABASE_STAGING_DB_URL }}
+
+      - name: Apply migration on staging
+        run: supabase db push --db-url "$SUPABASE_STAGING_DB_URL"
+        env:
+          SUPABASE_STAGING_DB_URL: ${{ secrets.SUPABASE_STAGING_DB_URL }}
