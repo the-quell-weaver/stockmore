@@ -51,8 +51,14 @@ function getProjectRef(supabaseUrl: string): string {
   return hostname.split('.')[0]
 }
 
-function getCookieDomain(supabaseUrl: string): string {
-  return new URL(supabaseUrl).hostname
+function getCookieSettings(baseUrl: string) {
+  const { protocol, hostname } = new URL(baseUrl)
+  const isLocalhost = hostname === 'localhost' || hostname === '127.0.0.1'
+
+  return {
+    domain: isLocalhost ? 'localhost' : hostname,
+    secure: protocol === 'https:' && !isLocalhost,
+  }
 }
 
 export async function provisionAuthState() {
@@ -93,6 +99,7 @@ export async function provisionAuthState() {
   const projectRef = getProjectRef(supabaseUrl)
   const localStorageKey = `sb-${projectRef}-auth-token`
   const cookieName = `sb-${projectRef}-auth-token`
+  const cookieSettings = getCookieSettings(baseUrl)
 
   const expiresEpoch = session.expires_at ?? Math.floor(Date.now() / 1000) + 3600
 
@@ -107,10 +114,10 @@ export async function provisionAuthState() {
           null,
           'base64url+length',
         ]),
-        domain: getCookieDomain(supabaseUrl),
+        domain: cookieSettings.domain,
         path: '/',
         httpOnly: false,
-        secure: true,
+        secure: cookieSettings.secure,
         sameSite: 'Lax' as const,
         expires: expiresEpoch,
       },
