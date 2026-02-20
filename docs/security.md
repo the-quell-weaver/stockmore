@@ -10,9 +10,11 @@
 
 ## 1. 身份與會話（Auth）
 
-- 登入方式（magic link / OAuth）
-- session 取得方式（server/client）
+- 登入方式：Email magic link（Supabase Auth）
+- session 取得方式：server-side cookies（`supabase.auth.verifyOtp`）與 client-side session
 - callback 與 cookie/session 的責任邊界
+  - `/auth/callback` 只負責驗證 token 並建立 session
+  - 不在 URL 或 log 中保存 token（避免洩漏）
 
 ## 2. 多租戶模型（Tenant Isolation）
 
@@ -73,4 +75,3 @@
 
 - 發現資料越權時：立即措施（關閉入口、回滾、撤銷 key）
 - 後續修補：補測試、補文件
-

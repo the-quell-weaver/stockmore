@@ -6,6 +6,7 @@
 ## 0. 文件目的與範圍
 
 - 本文件涵蓋的功能範圍（對應哪些 UC）
+  - UC_01 Auth & Onboarding（本 PR 無 schema 變更）
 - 本文件不涵蓋的項目（例如 UI 文案、第三方整合細節）
 - 主要設計原則（multi-tenant、append-only transactions、可匯出/可搬遷）
 
@@ -85,4 +86,3 @@
 
 - Glossary（名詞）
 - 相關連結（Supabase schema、ERD 圖、SQL 檔案）
-

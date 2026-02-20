@@ -6,6 +6,7 @@
 ## 0. 文件目的與範圍
 
 - 涵蓋哪些 UC
+  - UC_01 Auth & Onboarding：magic link 登入與 callback
 - 介面類型（Route Handlers vs Server Actions vs Supabase RPC）採用原則
 
 ## 1. 通用約定
@@ -13,7 +14,7 @@
 ### 1.1 Base URLs / Routing
 
 - Next.js routes 的基本結構（app router）
-- Auth callback 路徑（若適用）
+- Auth callback 路徑：`/auth/callback`（magic link 回跳）
 
 ### 1.2 Auth / Session
 
@@ -40,9 +41,61 @@
 
 - 清單（表格）：Name | Method/Type | Path/Identifier | Auth | Purpose | UC
 
+| Name | Method/Type | Path/Identifier | Auth | Purpose | UC |
+| --- | --- | --- | --- | --- | --- |
+| requestMagicLink | Client action | Supabase `auth.signInWithOtp` | Public | 發送 magic link | UC_01 |
+| authCallback | Route Handler | `GET /auth/callback` | Public | 驗證 magic link 並建立 session | UC_01 |
+
 ## 3. 介面規格（逐項）
 
 > 每個 endpoint/action 用相同格式。
+
+### 3.1 `requestMagicLink`
+
+**Type**
+- Client action (Supabase JS)
+
+**Purpose**
+- 讓使用者輸入 email，送出 magic link
+
+**Auth**
+- public
+
+**Request**
+- Body: `{ email }`
+- Validation: email 格式
+
+**Response**
+- 成功：Supabase 回傳 200
+
+**Errors**
+- `AUTH_EMAIL_INVALID`
+
+**Notes**
+- `emailRedirectTo` 設為 `/auth/callback?next=/stock`
+
+### 3.2 `authCallback`
+
+**Type**
+- Route Handler
+
+**Purpose**
+- 驗證 magic link token，建立 session，導向 next
+
+**Auth**
+- public
+
+**Request**
+- Query: `token_hash`, `type`, `next`
+
+**Response**
+- 307 redirect to `next`（預設 `/stock`）
+
+**Errors**
+- `AUTH_LINK_INVALID_OR_EXPIRED`
+
+**Notes**
+- `next` 需經 sanitize，避免 open redirect
 
 ### 3.x `<name>`
 
@@ -91,4 +144,3 @@
 
 - breaking change 定義
 - deprecate 流程
-

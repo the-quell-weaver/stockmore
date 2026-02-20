@@ -6,6 +6,7 @@
 ## 0. 文件目的與範圍
 
 - 涵蓋哪些 UC
+  - UC_01 Auth & Onboarding（login + callback + stock landing）
 - 手機優先原則與設計假設（單手操作、少輸入）
 
 ## 1. IA / Navigation 概覽
@@ -17,6 +18,12 @@
 
 - 表格：Route | Page name | Auth required | Primary actions | UC
 
+| Route | Page name | Auth required | Primary actions | UC |
+| --- | --- | --- | --- | --- |
+| `/login` | Login | No | Send magic link | UC_01 |
+| `/auth/callback` | Auth callback | No | Verify token + redirect | UC_01 |
+| `/stock` | Stock | Yes | View default warehouse | UC_01 |
+
 ## 3. 全域狀態與導頁規則
 
 - 未登入導向（middleware 或 layout guard）
@@ -26,6 +33,32 @@
 ## 4. Flow（逐 UC / 逐流程）
 
 > 每個流程用相同格式。
+
+### 4.1 `Magic link login`
+
+**Goal**
+- 使用者登入並進入庫存頁
+
+**Entry points**
+- `/login`
+
+**Happy path（步驟序列）**
+1. 使用者輸入 email，送出 magic link
+2. 使用者點擊 email 內連結回到 `/auth/callback`
+3. 系統建立 session 後導向 `/stock`
+
+**Screens involved**
+- `/login` → `/auth/callback` → `/stock`
+
+**Validation & error handling**
+- email 格式驗證：`AUTH_EMAIL_INVALID`
+- magic link 過期/無效：回 `/login` 顯示 `AUTH_LINK_INVALID_OR_EXPIRED`
+
+**Edge cases**
+- 未登入存取 `/stock` → 導向 `/login`（`AUTH_REQUIRED`）
+
+**Mobile UX notes**
+- 單欄表單、單一 CTA
 
 ### 4.x `<Flow name>`
 
@@ -73,6 +106,30 @@
 - **Error states**：失敗時怎麼呈現（錯誤碼/重試）
 - **Tracking/Logs（可選）**：記錄哪些事件
 
+### 5.1 `/login` — Login
+
+- **Purpose**：輸入 email 送出 magic link
+- **Auth**：不需要登入
+- **Primary CTA**：Send magic link
+- **Components**：Email input、送出按鈕、錯誤提示
+- **Empty states**：無（初始空白）
+- **Error states**：`AUTH_EMAIL_INVALID`, `AUTH_LINK_INVALID_OR_EXPIRED`
+
+### 5.2 `/auth/callback` — Auth callback
+
+- **Purpose**：驗證 magic link token 並導向 `/stock`
+- **Auth**：不需要登入
+- **Primary CTA**：無（系統導向）
+- **Error states**：`AUTH_LINK_INVALID_OR_EXPIRED`
+
+### 5.3 `/stock` — Stock
+
+- **Purpose**：顯示已登入狀態與預設倉庫空狀態
+- **Auth**：需要登入
+- **Primary CTA**：無（MVP）
+- **Empty states**：顯示「尚未建立」提示
+- **Error states**：`AUTH_REQUIRED`
+
 ## 6. 文案與本地化（可選）
 
 - 核心提示文案的位置與原則
@@ -88,4 +145,4 @@
 
 - 每個流程至少 1 條 e2e 或 integration 覆蓋
 - 指向測試檔案/案例
-
+- `src/e2e/login-magic-link.spec.ts`（login magic link smoke）

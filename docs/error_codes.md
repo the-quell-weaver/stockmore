@@ -23,6 +23,13 @@
 
 - 表格：Code | Category | HTTP status | Retryable | User-facing message（短） | Used by (API/Flow) | Notes
 
+| Code | Category | HTTP status | Retryable | User-facing message | Used by | Notes |
+| --- | --- | --- | --- | --- | --- | --- |
+| `AUTH_EMAIL_INVALID` | Auth | 400 | Yes | Email 格式不正確 | Login | 前端驗證 + 伺服器回應 |
+| `AUTH_LINK_INVALID_OR_EXPIRED` | Auth | 400 | Yes | Magic link 無效或過期 | Auth callback | 回到 `/login` 可重送 |
+| `BOOTSTRAP_FAILED` | Auth | 500 | Yes | 初始化帳號失敗 | Onboarding | 後續 PR |
+| `AUTH_REQUIRED` | Auth | 401 | Yes | 請先登入 | Protected routes | 導向 `/login` |
+
 ## 4. 錯誤碼詳述（逐條）
 
 > 每個錯誤碼用相同格式。
@@ -37,6 +44,42 @@
 - **Developer notes**：log 建議（要記錄哪些欄位，避免 PII）
 - **Test coverage**：應有哪些測試覆蓋（unit/integration/e2e）
 
+### 4.1 `AUTH_EMAIL_INVALID`
+
+- **When**：email 格式驗證失敗
+- **Where**：`/login`
+- **HTTP status**：400
+- **Retryable**：可立即重試
+- **User message**：請輸入正確的 email
+- **Test coverage**：unit（email 驗證）
+
+### 4.2 `AUTH_LINK_INVALID_OR_EXPIRED`
+
+- **When**：magic link token 無效或過期
+- **Where**：`/auth/callback`
+- **HTTP status**：400
+- **Retryable**：可立即重送
+- **User message**：登入連結失效，請重新寄送
+- **Test coverage**：integration（callback 分支）
+
+### 4.3 `BOOTSTRAP_FAILED`
+
+- **When**：建立/取得預設 org/warehouse 失敗
+- **Where**：onboarding bootstrap
+- **HTTP status**：500
+- **Retryable**：可重試（需 idempotent）
+- **User message**：初始化失敗，請稍後再試
+- **Test coverage**：integration（bootstrap）
+
+### 4.4 `AUTH_REQUIRED`
+
+- **When**：存取受保護頁面但尚未登入
+- **Where**：`/stock` 等受保護頁
+- **HTTP status**：401
+- **Retryable**：可登入後重試
+- **User message**：請先登入
+- **Test coverage**：integration（route guard）
+
 ## 5. 類別附錄（可選）
 
 - Auth errors
@@ -47,4 +90,3 @@
 ## 6. 變更紀錄（可選）
 
 - 新增/修改/棄用錯誤碼的紀錄
-
