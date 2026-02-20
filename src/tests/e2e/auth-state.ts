@@ -1,4 +1,5 @@
 import { randomUUID } from 'node:crypto'
+import { existsSync, readFileSync } from 'node:fs'
 import { mkdir, readFile, writeFile } from 'node:fs/promises'
 import path from 'node:path'
 import { createClient } from '@supabase/supabase-js'
@@ -6,6 +7,36 @@ import { createClient } from '@supabase/supabase-js'
 const authDir = path.resolve(process.cwd(), 'playwright/.auth')
 export const authStatePath = path.join(authDir, 'user.json')
 export const testUserPath = path.join(authDir, 'test-user.json')
+
+
+function loadEnvFiles() {
+  const candidatePaths = [
+    path.resolve(process.cwd(), '.env.local'),
+    path.resolve(process.cwd(), '.env'),
+  ]
+
+  for (const envPath of candidatePaths) {
+    if (!existsSync(envPath)) continue
+    const content = readFileSync(envPath, 'utf8')
+    for (const rawLine of content.split(/\r?\n/)) {
+      const line = rawLine.trim()
+      if (!line || line.startsWith('#')) continue
+      const eqIndex = line.indexOf('=')
+      if (eqIndex <= 0) continue
+      const key = line.slice(0, eqIndex).trim()
+      let value = line.slice(eqIndex + 1).trim()
+      if (
+        (value.startsWith('"') && value.endsWith('"')) ||
+        (value.startsWith("'") && value.endsWith("'"))
+      ) {
+        value = value.slice(1, -1)
+      }
+      if (!process.env[key]) {
+        process.env[key] = value
+      }
+    }
+  }
+}
 
 function requiredEnv(name: string): string {
   const value = process.env[name]
@@ -25,6 +56,7 @@ function getCookieDomain(supabaseUrl: string): string {
 }
 
 export async function provisionAuthState() {
+  loadEnvFiles()
   const supabaseUrl = requiredEnv('NEXT_PUBLIC_SUPABASE_URL')
   const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? requiredEnv('NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY')
   const serviceRoleKey = requiredEnv('SUPABASE_SERVICE_ROLE_KEY')
@@ -109,6 +141,7 @@ export async function provisionAuthState() {
 }
 
 export async function cleanupAuthUser() {
+  loadEnvFiles()
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
   const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY
 
