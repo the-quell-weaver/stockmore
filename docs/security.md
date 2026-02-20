@@ -16,6 +16,8 @@
   - `/auth/callback` 只負責驗證 token 並建立 session
   - 不在 URL 或 log 中保存 token（避免洩漏）
 
+> Auth URL（Site URL / Redirect allowlist）設定細節請見 `docs/testing_guide.md` 的「Production Auth URL 設定（Supabase）」。
+
 ## 2. 多租戶模型（Tenant Isolation）
 
 - Tenant key（`org_id`）的定義

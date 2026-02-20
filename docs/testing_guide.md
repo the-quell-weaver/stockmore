@@ -49,11 +49,13 @@ npx supabase start
 npm --prefix src run supabase:local-env
 ```
 
-### 5.2 啟動 App Server（建議 dev）
+### 5.2 啟動 App Server（必要）
 
 ```bash
 npm --prefix src run dev
 ```
+
+> E2E 不會自動啟動 App Server。執行 `test:e2e` 前必須先啟動，並保持運行。
 
 ### 5.3 執行 E2E
 
@@ -110,3 +112,12 @@ PLAYWRIGHT_BASE_URL=http://localhost:5566 npm --prefix src run test:e2e
 
 - E2E 連不上 App：確認 app 正在跑、base URL 是否對到 `localhost:5566`。
 - E2E 連不上 Supabase：確認 `supabase start` 已執行，且 `.env.local` 已更新。
+
+## 9. Production Auth URL 設定（Supabase）
+
+本機 `supabase/config.toml` 只影響 **local Supabase CLI**。上線環境需在 Supabase 專案設定中配置：
+
+- **Site URL**：設定為正式網域（例如 `https://app.yourdomain.com`）
+- **Additional Redirect URLs**：加入 `https://app.yourdomain.com/auth/callback`
+
+若有 Preview（例如 Vercel preview），也需加入對應的 callback URL。若 redirect URL 不在 allowlist，Supabase 會回退到 Site URL（可能造成導頁錯誤）。
