@@ -1,0 +1,19 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+if ! command -v docker >/dev/null 2>&1; then
+  echo "[supabase wrapper] docker is required to run Supabase CLI." >&2
+  echo "[supabase wrapper] Please install Docker Desktop / Docker Engine first." >&2
+  exit 1
+fi
+
+exec docker run --rm \
+  -v "${PWD}:${PWD}" \
+  -w "${PWD}" \
+  -v "${HOME}/.supabase:/root/.supabase" \
+  -v /var/run/docker.sock:/var/run/docker.sock \
+  -e SUPABASE_ACCESS_TOKEN \
+  -e SUPABASE_DB_PASSWORD \
+  -e SUPABASE_PROJECT_ID \
+  -e SUPABASE_ENV \
+  supabase/cli:latest "$@"

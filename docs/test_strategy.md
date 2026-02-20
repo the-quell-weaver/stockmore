@@ -52,6 +52,7 @@
 ## 測試資料與環境
 
 - **本機 Supabase**：優先使用 `supabase start` / `supabase db reset` 建立乾淨 DB。
+- 啟動 local Supabase 後，執行 `npm --prefix src run supabase:local-env` 產生 `src/.env.local`（包含 URL/anon(or publishable)/service role），讓 Playwright global setup 可直接建立測試使用者。
 - **migrations 必可重放**：CI 每次從空 DB 套 migrations + RLS。
 - **seed**：提供最小 seed（org、warehouse、membership、1–2 個 item）供 e2e/integration 使用。
 

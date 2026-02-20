@@ -7,6 +7,7 @@ import { execFileSync } from 'node:child_process'
 const REQUIRED_KEYS = [
   'NEXT_PUBLIC_SUPABASE_URL',
   'NEXT_PUBLIC_SUPABASE_ANON_KEY',
+  'NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY',
   'SUPABASE_SERVICE_ROLE_KEY',
 ]
 
@@ -53,9 +54,13 @@ function parseEnv(content) {
 }
 
 function buildValues(supabaseEnv) {
+  const publishableKey =
+    supabaseEnv.SUPABASE_PUBLISHABLE_KEY ?? supabaseEnv.SUPABASE_ANON_KEY
+
   const values = {
     NEXT_PUBLIC_SUPABASE_URL: supabaseEnv.SUPABASE_URL,
     NEXT_PUBLIC_SUPABASE_ANON_KEY: supabaseEnv.SUPABASE_ANON_KEY,
+    NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: publishableKey,
     SUPABASE_SERVICE_ROLE_KEY: supabaseEnv.SUPABASE_SERVICE_ROLE_KEY,
   }
 
