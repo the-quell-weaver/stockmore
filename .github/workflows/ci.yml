@@ -36,7 +36,7 @@ jobs:
       - name: Start Supabase local stack
         run: supabase start
 
-      - name: Reset Supabase DB
+      - name: Replay migrations from an empty DB
         run: supabase db reset
 
       - name: Vitest unit
