@@ -129,11 +129,14 @@
 ## 6. DB 變更（Migrations / RLS）
 
 * 任何 schema 變更都要 migration。
+* 任何 schema / RLS / policy / index / constraint 變更，一律以 SQL migration 檔提交到 `supabase/migrations/*.sql`。
 * 新表必須：
 
   * primary key / foreign keys
   * 必要索引（查詢熱點）
   * RLS enabled + policies（至少 select/insert/update）
+* 禁止直接在 production dashboard 手動修改 schema（包含 table/column/index/constraint/policy）。
+  * 若遇到緊急 hotfix，可先處理事故，但必須在同日（或下一個工作日）補回對應 migration 並通過 CI。
 * 如果資料不可逆：PR 必須寫明「回滾策略」（通常是停用 UI 入口，不回滾資料）。
 
 ## 7. 設計與 UI（手機優先）
