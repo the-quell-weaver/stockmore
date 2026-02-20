@@ -3,6 +3,7 @@ import { existsSync, readFileSync } from 'node:fs'
 import { mkdir, readFile, writeFile } from 'node:fs/promises'
 import path from 'node:path'
 import { createClient } from '@supabase/supabase-js'
+import { createChunks, stringToBase64URL } from '@supabase/ssr'
 
 const authDir = path.resolve(process.cwd(), 'playwright/.auth')
 export const authStatePath = path.join(authDir, 'user.json')
@@ -61,6 +62,27 @@ function getCookieSettings(baseUrl: string) {
   }
 }
 
+const COOKIE_BASE64_PREFIX = 'base64-'
+
+function buildAuthCookies(
+  name: string,
+  value: string,
+  options: { domain: string; secure: boolean; expires: number },
+) {
+  const encodedValue = `${COOKIE_BASE64_PREFIX}${stringToBase64URL(value)}`
+  const chunks = createChunks(name, encodedValue)
+  return chunks.map((chunk) => ({
+    name: chunk.name,
+    value: chunk.value,
+    domain: options.domain,
+    path: '/',
+    httpOnly: false,
+    secure: options.secure,
+    sameSite: 'Lax' as const,
+    expires: options.expires,
+  }))
+}
+
 export async function provisionAuthState() {
   loadEnvFiles()
   const supabaseUrl = requiredEnv('NEXT_PUBLIC_SUPABASE_URL')
@@ -103,39 +125,28 @@ export async function provisionAuthState() {
 
   const expiresEpoch = session.expires_at ?? Math.floor(Date.now() / 1000) + 3600
 
+  const storageValue = JSON.stringify({
+    access_token: session.access_token,
+    refresh_token: session.refresh_token,
+    expires_at: session.expires_at,
+    expires_in: session.expires_in,
+    token_type: session.token_type,
+    user: session.user,
+  })
+
   const storageState = {
-    cookies: [
-      {
-        name: cookieName,
-        value: JSON.stringify([
-          session.access_token,
-          session.refresh_token,
-          null,
-          null,
-          'base64url+length',
-        ]),
-        domain: cookieSettings.domain,
-        path: '/',
-        httpOnly: false,
-        secure: cookieSettings.secure,
-        sameSite: 'Lax' as const,
-        expires: expiresEpoch,
-      },
-    ],
+    cookies: buildAuthCookies(cookieName, storageValue, {
+      domain: cookieSettings.domain,
+      secure: cookieSettings.secure,
+      expires: expiresEpoch,
+    }),
     origins: [
       {
         origin: baseUrl,
         localStorage: [
           {
             name: localStorageKey,
-            value: JSON.stringify({
-              access_token: session.access_token,
-              refresh_token: session.refresh_token,
-              expires_at: session.expires_at,
-              expires_in: session.expires_in,
-              token_type: session.token_type,
-              user: session.user,
-            }),
+            value: storageValue,
           },
         ],
       },
