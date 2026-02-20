@@ -139,6 +139,32 @@
   * 若遇到緊急 hotfix，可先處理事故，但必須在同日（或下一個工作日）補回對應 migration 並通過 CI。
 * 如果資料不可逆：PR 必須寫明「回滾策略」（通常是停用 UI 入口，不回滾資料）。
 
+
+### 6.1 何時使用 `scripts/supabase/local-env.mjs`
+
+`node scripts/supabase/local-env.mjs` 的用途是把 local Supabase 的連線資訊同步到 app 的 `src/.env.local`。
+
+建議在以下情境執行：
+
+- 第一次 clone 專案後，完成 `supabase start` 之後。
+- local Supabase 重新啟動、reset、或版本更新後（避免 key/url 漂移）。
+- 執行需要 local Supabase 的 integration/e2e 測試前。
+- `.env.local` 被清空、遺失，或你懷疑內容過期時。
+
+標準流程：
+
+1. `supabase start`
+2. `node scripts/supabase/local-env.mjs`
+3. 確認 `src/.env.local` 至少包含：
+   - `NEXT_PUBLIC_SUPABASE_URL`
+   - `NEXT_PUBLIC_SUPABASE_ANON_KEY`
+   - `SUPABASE_SERVICE_ROLE_KEY`
+
+注意：
+
+- 腳本可重跑（idempotent），會更新既有 key 並補齊缺漏 key，不應產生重複。
+- 若 local Supabase 尚未啟動，腳本會提示先執行 `supabase start`。
+
 ## 7. 設計與 UI（手機優先）
 
 * 重要操作（入庫/消耗/盤點）在手機一手可操作：

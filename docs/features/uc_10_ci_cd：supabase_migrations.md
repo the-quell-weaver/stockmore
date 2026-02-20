@@ -74,7 +74,7 @@
     - DB_URL 使用 **Direct DB connection**。
     - CI 暫時接受使用具備 DDL 權限的 DB user（未來再收斂）。
 19. ✅ 需要一個可重現的「local config 產生腳本」：任何開發者執行後，都能從 `supabase start` 的 local 專案狀態產出環境檔供 app / tests 使用。
-20. ✅ local config 產出檔位置：`apps/web/.env.local`
+20. ✅ local config 產出檔位置：`src/.env.local`
 
 ---
 
@@ -270,7 +270,7 @@ Server-only（若你有後端需要管理權限/排程/管理 API 才會用到�
     - `SUPABASE_URL`（local，通常是 `http://127.0.0.1:54321`）
     - `SUPABASE_ANON_KEY`
     - `SUPABASE_SERVICE_ROLE_KEY`
-  - ✅ 產出到 `apps/web/.env.local`
+  - ✅ 產出到 `src/.env.local`
   - 檔案內容至少包含：
     - `NEXT_PUBLIC_SUPABASE_URL=<local url>`
     - `NEXT_PUBLIC_SUPABASE_ANON_KEY=<local anon>`
@@ -352,7 +352,7 @@ Server-only（若你有後端需要管理權限/排程/管理 API 才會用到�
 
 ## 10. 待確認點（更新後）
 
-> 目前所有關鍵決策已定案（含 `.env.local` 放置位置與 production environment required reviewers）。本節暫無待確認事項。
+> 目前所有關鍵決策已定案（含 `.env.local` 放置位置：`src/.env.local`，以及 production environment required reviewers）。本節暫無待確認事項。
 
 （若未來要收斂 DB_URL 權限，或要把 `supabase/functions/**` 納入自動部署，再回來新增。）
 
