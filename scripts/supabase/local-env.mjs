@@ -7,6 +7,7 @@ import { execFileSync } from 'node:child_process'
 const REQUIRED_KEYS = [
   'NEXT_PUBLIC_SUPABASE_URL',
   'NEXT_PUBLIC_SUPABASE_ANON_KEY',
+  'NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY',
   'SUPABASE_SERVICE_ROLE_KEY',
 ]
 
@@ -25,7 +26,7 @@ function readSupabaseEnv() {
   } catch (error) {
     const message = error?.stderr?.toString()?.trim() || error.message
     console.error('[local-env] 無法讀取 `supabase status -o env`。')
-    console.error('[local-env] 請先啟動 local Supabase：`supabase start`。')
+    console.error('[local-env] 請先確認已安裝 Supabase CLI，並啟動 local Supabase：`supabase start`。')
     console.error(`[local-env] 詳細錯誤：${message}`)
     process.exit(1)
   }
@@ -52,11 +53,30 @@ function parseEnv(content) {
     }, {})
 }
 
+function pickFirst(source, keys) {
+  for (const key of keys) {
+    if (source[key]) return source[key]
+  }
+  return undefined
+}
+
 function buildValues(supabaseEnv) {
+  const url = pickFirst(supabaseEnv, ['SUPABASE_URL', 'API_URL'])
+  const anonKey = pickFirst(supabaseEnv, ['SUPABASE_ANON_KEY', 'ANON_KEY'])
+  const publishableKey = pickFirst(supabaseEnv, [
+    'SUPABASE_PUBLISHABLE_KEY',
+    'PUBLISHABLE_KEY',
+  ]) ?? anonKey
+  const serviceRoleKey = pickFirst(supabaseEnv, [
+    'SUPABASE_SERVICE_ROLE_KEY',
+    'SERVICE_ROLE_KEY',
+  ])
+
   const values = {
-    NEXT_PUBLIC_SUPABASE_URL: supabaseEnv.SUPABASE_URL,
-    NEXT_PUBLIC_SUPABASE_ANON_KEY: supabaseEnv.SUPABASE_ANON_KEY,
-    SUPABASE_SERVICE_ROLE_KEY: supabaseEnv.SUPABASE_SERVICE_ROLE_KEY,
+    NEXT_PUBLIC_SUPABASE_URL: url,
+    NEXT_PUBLIC_SUPABASE_ANON_KEY: anonKey,
+    NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: publishableKey,
+    SUPABASE_SERVICE_ROLE_KEY: serviceRoleKey,
   }
 
   const missing = REQUIRED_KEYS.filter((key) => !values[key])
@@ -64,6 +84,7 @@ function buildValues(supabaseEnv) {
     console.error(
       `[local-env] 缺少必要值：${missing.join(', ')}。請確認 local Supabase 已啟動並可讀取 status。`,
     )
+    console.error(`[local-env] 目前可讀取 keys：${Object.keys(supabaseEnv).join(', ') || '(none)'}`)
     process.exit(1)
   }
 

@@ -4,6 +4,7 @@ import { createClient } from "@/lib/supabase/server";
 import { InfoIcon } from "lucide-react";
 import { FetchDataSteps } from "@/components/tutorial/fetch-data-steps";
 import { Suspense } from "react";
+import { InventoryHappyPath } from "@/components/protected/inventory-happy-path";
 
 async function UserDetails() {
   const supabase = await createClient();
@@ -38,6 +39,7 @@ export default function ProtectedPage() {
         <h2 className="font-bold text-2xl mb-4">Next steps</h2>
         <FetchDataSteps />
       </div>
+      <InventoryHappyPath />
     </div>
   );
 }

@@ -42,6 +42,9 @@ jobs:
         working-directory: .
         run: supabase db reset
 
+      - name: Generate local Supabase env for app and e2e
+        run: npm run supabase:local-env
+
       - name: Unit tests
         run: npm run test:unit
 
