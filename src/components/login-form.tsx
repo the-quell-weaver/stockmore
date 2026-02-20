@@ -68,6 +68,8 @@ export function LoginForm({
       redirectUrl.searchParams.set("next", nextPath);
       redirectUrl.searchParams.set("type", "magiclink");
 
+      // Keep redirect URL construction in one place for testing and audits.
+
       const { error } = await supabase.auth.signInWithOtp({
         email: normalizedEmail,
         options: {
