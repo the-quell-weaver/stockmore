@@ -26,7 +26,7 @@ function readSupabaseEnv() {
   } catch (error) {
     const message = error?.stderr?.toString()?.trim() || error.message
     console.error('[local-env] 無法讀取 `supabase status -o env`。')
-    console.error('[local-env] 請先啟動 local Supabase：`supabase start`。')
+    console.error('[local-env] 請先確認已安裝 Supabase CLI，並啟動 local Supabase：`supabase start`。')
     console.error(`[local-env] 詳細錯誤：${message}`)
     process.exit(1)
   }

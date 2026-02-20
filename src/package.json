@@ -40,7 +40,6 @@
     "tailwindcss-animate": "^1.0.7",
     "typescript": "^5",
     "vitest": "^2.1.8",
-    "@playwright/test": "^1.50.1",
-    "supabase": "file:../tools/supabase-cli"
+    "@playwright/test": "^1.50.1"
   }
 }

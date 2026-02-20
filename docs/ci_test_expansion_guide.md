@@ -116,6 +116,7 @@
    - `npm run test:e2e`
 2. **unit / integration 建議分 project 或目錄**：避免互相污染資料。
 3. **若 integration / e2e 依賴 Supabase local**：沿用 CI 內 `supabase start` + `supabase db reset`，並補 `npm run supabase:local-env` 生成 `src/.env.local`。
+   - CI 建議只使用 `uses: supabase/setup-cli@v1` 提供 CLI，不需要在 `src/package.json` 另外安裝 `supabase` devDependency。
 4. **e2e 測試資料要可重建、可清理**：避免測試偶發失敗（flaky）。
 5. **不要把 `--passWithNoTests` 永久保留**：它只適合「測試剛起步」過渡期。
 
