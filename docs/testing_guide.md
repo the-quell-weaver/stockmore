@@ -63,6 +63,14 @@ npm --prefix src run dev
 npm --prefix src run test:e2e
 ```
 
+### 5.3.1 Codex CLI 快速執行
+
+在 Codex CLI 模式中，請使用統一腳本執行 E2E（包含環境準備與啟動 App）：
+
+```bash
+scripts/testing/run-e2e.sh
+```
+
 ### 5.4 Base URL 注意事項（重要）
 
 - 預設 base URL：`http://localhost:5566`（見 `src/playwright.config.mjs`）

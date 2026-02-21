@@ -135,7 +135,8 @@ describe("multi-tenant RLS (UC_01 AC3)", () => {
       const crossOrgUpdate = await clientA
         .from("orgs")
         .update({ name: "hacked" })
-        .eq("id", rowB.org_id);
+        .eq("id", rowB.org_id)
+        .select("id");
       expect(crossOrgUpdate.error).toBeNull();
       expect(crossOrgUpdate.data).toEqual([]);
 
@@ -162,7 +163,8 @@ describe("multi-tenant RLS (UC_01 AC3)", () => {
       const crossMembershipUpdate = await clientA
         .from("org_memberships")
         .update({ role: "editor" })
-        .eq("id", targetMembershipId.data!.id);
+        .eq("id", targetMembershipId.data!.id)
+        .select("id");
       expect(crossMembershipUpdate.error).toBeNull();
       expect(crossMembershipUpdate.data).toEqual([]);
     } finally {
