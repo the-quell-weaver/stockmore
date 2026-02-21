@@ -1,5 +1,8 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
+
+import { AUTH_ERROR_CODES } from "@/lib/auth/errors";
+
 import { hasEnvVars } from "../utils";
 
 export async function updateSession(request: NextRequest) {
@@ -47,15 +50,11 @@ export async function updateSession(request: NextRequest) {
   const { data } = await supabase.auth.getClaims();
   const user = data?.claims;
 
-  if (
-    request.nextUrl.pathname !== "/" &&
-    !user &&
-    !request.nextUrl.pathname.startsWith("/login") &&
-    !request.nextUrl.pathname.startsWith("/auth")
-  ) {
-    // no user, potentially respond by redirecting the user to the login page
+  if (!user && request.nextUrl.pathname.startsWith("/stock")) {
     const url = request.nextUrl.clone();
     url.pathname = "/login";
+    url.searchParams.set("error", AUTH_ERROR_CODES.AUTH_REQUIRED);
+    url.searchParams.set("next", request.nextUrl.pathname);
     return NextResponse.redirect(url);
   }
 

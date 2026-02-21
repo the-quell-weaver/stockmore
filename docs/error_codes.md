@@ -74,7 +74,7 @@
 ### 4.4 `AUTH_REQUIRED`
 
 - **When**：存取受保護頁面但尚未登入
-- **Where**：`/stock` 等受保護頁
+- **Where**：`/stock`（proxy + server guard 皆可觸發）
 - **HTTP status**：401
 - **Retryable**：可登入後重試
 - **User message**：請先登入
