@@ -34,6 +34,16 @@ export async function handleAuthCallback(request: NextRequest) {
 
   const supabase = await createClient();
   let error: Error | null = null;
+
+  if (process.env.NODE_ENV !== "production") {
+    console.info("[auth/callback] incoming", {
+      hasCode: Boolean(code),
+      hasTokenHash: Boolean(rawTokenHash),
+      hasToken: Boolean(rawToken),
+      type,
+      nextPath,
+    });
+  }
   try {
     if (code) {
       const { error: exchangeError } =
@@ -49,6 +59,11 @@ export async function handleAuthCallback(request: NextRequest) {
   }
 
   if (error) {
+    if (process.env.NODE_ENV !== "production") {
+      console.warn("[auth/callback] auth exchange failed", {
+        message: error.message,
+      });
+    }
     return redirectToLogin(
       requestUrl,
       nextPath,
