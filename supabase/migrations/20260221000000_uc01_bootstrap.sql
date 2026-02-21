@@ -133,7 +133,10 @@ create policy warehouses_update_org_member
 create or replace function public.bootstrap_default_org_and_warehouse()
 returns table (org_id uuid, warehouse_id uuid)
 language plpgsql
+security definer
+set search_path = public, auth, pg_temp
 as $$
+#variable_conflict use_column
 declare
   v_org_id uuid;
   v_warehouse_id uuid;

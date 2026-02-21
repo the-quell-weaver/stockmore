@@ -77,13 +77,26 @@ describe("bootstrap_default_org_and_warehouse (integration)", () => {
     });
 
     try {
-      const { error: signInError } = await userClient.auth.signInWithPassword({
-        email,
-        password,
-      });
+      const { data: signInData, error: signInError } =
+        await userClient.auth.signInWithPassword({
+          email,
+          password,
+        });
       if (signInError) throw signInError;
+      if (!signInData?.session) {
+        throw new Error("Missing session after sign-in");
+      }
 
-      const first = await userClient.rpc(
+      const authedClient = createClient(supabaseUrl, anonKey, {
+        auth: { autoRefreshToken: false, persistSession: false },
+        global: {
+          headers: {
+            Authorization: `Bearer ${signInData.session.access_token}`,
+          },
+        },
+      });
+
+      const first = await authedClient.rpc(
         "bootstrap_default_org_and_warehouse",
       );
       expect(first.error).toBeNull();
@@ -91,7 +104,7 @@ describe("bootstrap_default_org_and_warehouse (integration)", () => {
       expect(firstRow?.org_id).toBeTruthy();
       expect(firstRow?.warehouse_id).toBeTruthy();
 
-      const second = await userClient.rpc(
+      const second = await authedClient.rpc(
         "bootstrap_default_org_and_warehouse",
       );
       expect(second.error).toBeNull();
