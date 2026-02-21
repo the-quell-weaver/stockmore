@@ -5,7 +5,6 @@ import { AUTH_ERROR_CODES } from "../../../lib/auth/errors";
 import { GET } from "./route";
 
 const verifyOtp = vi.fn();
-const exchangeCodeForSession = vi.fn();
 const { bootstrapDefaultOrgAndWarehouse } = vi.hoisted(() => ({
   bootstrapDefaultOrgAndWarehouse: vi.fn(),
 }));
@@ -14,7 +13,6 @@ vi.mock("../../../lib/supabase/server", () => ({
   createClient: vi.fn(async () => ({
     auth: {
       verifyOtp,
-      exchangeCodeForSession,
     },
   })),
 }));
@@ -25,7 +23,6 @@ vi.mock("../../../lib/auth/bootstrap", () => ({
 
 beforeEach(() => {
   verifyOtp.mockReset();
-  exchangeCodeForSession.mockReset();
   bootstrapDefaultOrgAndWarehouse.mockReset();
   bootstrapDefaultOrgAndWarehouse.mockResolvedValue({
     orgId: "org-1",
@@ -79,18 +76,19 @@ describe("/auth/callback", () => {
     );
   });
 
-  it("redirects to next on valid code exchange", async () => {
-    exchangeCodeForSession.mockResolvedValue({ error: null });
+  it("redirects code flow to client-side exchange page", async () => {
     const request = new NextRequest(
       "http://localhost/auth/callback?code=abc123&next=/stock",
     );
 
     const response = await GET(request);
 
-    expect(exchangeCodeForSession).toHaveBeenCalledOnce();
-    expect(bootstrapDefaultOrgAndWarehouse).toHaveBeenCalledOnce();
+    expect(verifyOtp).not.toHaveBeenCalled();
+    expect(bootstrapDefaultOrgAndWarehouse).not.toHaveBeenCalled();
     expect(response.status).toBe(307);
-    expect(response.headers.get("location")).toBe("http://localhost/stock");
+    expect(response.headers.get("location")).toBe(
+      "http://localhost/auth/exchange?code=abc123&next=%2Fstock",
+    );
   });
 
   it("accepts token param as token_hash fallback", async () => {

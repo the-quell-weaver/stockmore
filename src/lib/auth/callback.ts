@@ -46,9 +46,10 @@ export async function handleAuthCallback(request: NextRequest) {
   }
   try {
     if (code) {
-      const { error: exchangeError } =
-        await supabase.auth.exchangeCodeForSession(code);
-      error = exchangeError ?? null;
+      const exchangeUrl = new URL("/auth/exchange", requestUrl.origin);
+      exchangeUrl.searchParams.set("code", code);
+      exchangeUrl.searchParams.set("next", nextPath);
+      return NextResponse.redirect(exchangeUrl);
     } else if (tokenHash && type) {
       error = await verifyMagicLinkToken(supabase, type, tokenHash, rawToken);
     } else {
