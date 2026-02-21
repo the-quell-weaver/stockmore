@@ -6,26 +6,35 @@
 ## 0. 文件目的與範圍
 
 - 本文件涵蓋的功能範圍（對應哪些 UC）
-  - UC_01 Auth & Onboarding（本 PR 無 schema 變更）
+  - UC_01 Auth & Onboarding（org/warehouse/membership bootstrap）
 - 本文件不涵蓋的項目（例如 UI 文案、第三方整合細節）
 - 主要設計原則（multi-tenant、append-only transactions、可匯出/可搬遷）
 
 ## 1. 命名與慣例
 
 - 主鍵型別（例如 `uuid`）
+- UC_01：`uuid`
 - 時間欄位（例如 `created_at`, `updated_at`）
+- UC_01：`created_at`（timestamptz, default now())
 - 外鍵命名（`org_id`, `warehouse_id`, `created_by`…）
+- UC_01：`org_id`, `warehouse_id`, `created_by`, `owner_user_id`
 - 列舉/狀態欄位（建議用 `text` + check 或 enum 的策略）
+- UC_01：`role` 使用 `text`（MVP=owner）
 
 ## 2. Entity Relationship 概覽
 
 - ERD 概述（文字描述即可；可補一張簡圖連結）
+- UC_01：Org 1:n Membership；Org 1:n Warehouse（MVP 只允許 1 個預設）
 - 核心 entity 與關聯：Org / Membership / Warehouse / Item / Transaction / …
 
 ## 3. 資料表一覽（Index）
 
 - 表清單（表名 / 用途 / 主要 FK / 是否需要 RLS）
 - 每張表對應到哪些 UC
+- UC_01
+  - `orgs`（RLS，FK: owner_user_id）
+  - `org_memberships`（RLS，FK: org_id, user_id）
+  - `warehouses`（RLS，FK: org_id）
 
 ## 4. 各資料表規格（逐表）
 
@@ -55,6 +64,96 @@
 **Audit / History**
 - 是否需要 `created_by`、是否 append-only、是否需要作廢/沖銷欄位
 
+### 4.1 `orgs`
+
+**Purpose**
+- 租戶/組織根節點（UC_01）
+
+**Columns（表格）**
+- `id` | uuid | not null | gen_random_uuid() | PK | -
+- `name` | text | not null | - | org 名稱 | Default Org
+- `owner_user_id` | uuid | not null | - | auth.users | -
+- `created_by` | uuid | not null | - | 建立者 | -
+- `created_at` | timestamptz | not null | now() | 建立時間 | -
+
+**Primary Key / Foreign Keys**
+- PK: `id`
+- FK: `owner_user_id` → `auth.users(id)` ON DELETE CASCADE
+- FK: `created_by` → `auth.users(id)` ON DELETE CASCADE
+
+**Constraints**
+- UNIQUE(`owner_user_id`)（MVP 單人單 org、bootstrap idempotent）
+
+**Indexes**
+- `orgs_owner_user_id_key`（unique）
+
+**Row Ownership / Tenant Keys**
+- `org_id` = `orgs.id`
+
+**Audit / History**
+- `created_by`, `created_at`
+
+### 4.2 `org_memberships`
+
+**Purpose**
+- user ↔ org 關聯（RBAC 擴充點）
+
+**Columns（表格）**
+- `id` | uuid | not null | gen_random_uuid() | PK | -
+- `org_id` | uuid | not null | - | FK to orgs | -
+- `user_id` | uuid | not null | - | FK to auth.users | -
+- `role` | text | not null | 'owner' | 角色 | owner
+- `created_at` | timestamptz | not null | now() | 建立時間 | -
+
+**Primary Key / Foreign Keys**
+- PK: `id`
+- FK: `org_id` → `orgs(id)` ON DELETE CASCADE
+- FK: `user_id` → `auth.users(id)` ON DELETE CASCADE
+
+**Constraints**
+- UNIQUE(`org_id`, `user_id`)
+
+**Indexes**
+- `org_memberships_org_user_key`（unique）
+- `org_memberships_user_id_idx`
+
+**Row Ownership / Tenant Keys**
+- row belongs to `org_id`
+
+**Audit / History**
+- `created_at`
+
+### 4.3 `warehouses`
+
+**Purpose**
+- 倉庫（MVP 只建立一筆預設倉庫）
+
+**Columns（表格）**
+- `id` | uuid | not null | gen_random_uuid() | PK | -
+- `org_id` | uuid | not null | - | FK to orgs | -
+- `name` | text | not null | - | 倉庫名稱 | Default Warehouse
+- `is_default` | boolean | not null | true | 是否預設 | true
+- `created_by` | uuid | not null | - | 建立者 | -
+- `created_at` | timestamptz | not null | now() | 建立時間 | -
+
+**Primary Key / Foreign Keys**
+- PK: `id`
+- FK: `org_id` → `orgs(id)` ON DELETE CASCADE
+- FK: `created_by` → `auth.users(id)` ON DELETE CASCADE
+
+**Constraints**
+- UNIQUE(`org_id`) WHERE `is_default`（同 org 只能 1 個預設）
+
+**Indexes**
+- `warehouses_org_default_unique`（unique, partial）
+- `warehouses_org_id_idx`
+
+**Row Ownership / Tenant Keys**
+- row belongs to `org_id`
+
+**Audit / History**
+- `created_at`, `created_by`
+
 ## 5. 關鍵查詢與存取模式
 
 - 主要頁面/流程對 DB 的 read patterns（列表、篩選、聚合）
@@ -76,11 +175,13 @@
 - migrations 檔案位置與規範
 - 可向前相容原則（避免破壞性變更）
 - 資料遷移策略（rename/drop 的流程）
+- UC_01：`supabase/migrations/20260221000000_uc01_bootstrap.sql`
 
 ## 9. Seed / Fixtures（測試資料）
 
 - 最小 seed 內容（哪些表必填）
 - 測試用 fixture 生成策略（兩 org、兩 user 等）
+- UC_01：integration tests 以 admin client 建立 user，呼叫 bootstrap RPC 建立 org/warehouse/membership
 
 ## 10. 附錄
 

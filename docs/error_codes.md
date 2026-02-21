@@ -27,7 +27,7 @@
 | --- | --- | --- | --- | --- | --- | --- |
 | `AUTH_EMAIL_INVALID` | Auth | 400 | Yes | Email 格式不正確 | Login | 前端驗證 + 伺服器回應 |
 | `AUTH_LINK_INVALID_OR_EXPIRED` | Auth | 400 | Yes | Magic link 無效或過期 | Auth callback | 回到 `/login` 可重送 |
-| `BOOTSTRAP_FAILED` | Auth | 500 | Yes | 初始化帳號失敗 | Onboarding | 後續 PR |
+| `BOOTSTRAP_FAILED` | Auth | 500 | Yes | 初始化帳號失敗 | Onboarding | 可重試（需 idempotent） |
 | `AUTH_REQUIRED` | Auth | 401 | Yes | 請先登入 | Protected routes | 導向 `/login` |
 
 ## 4. 錯誤碼詳述（逐條）
@@ -65,7 +65,7 @@
 ### 4.3 `BOOTSTRAP_FAILED`
 
 - **When**：建立/取得預設 org/warehouse 失敗
-- **Where**：onboarding bootstrap
+- **Where**：`/auth/callback`, onboarding bootstrap
 - **HTTP status**：500
 - **Retryable**：可重試（需 idempotent）
 - **User message**：初始化失敗，請稍後再試

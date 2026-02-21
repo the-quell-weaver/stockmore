@@ -117,6 +117,11 @@ export async function provisionAuthState() {
     throw signInResult.error ?? new Error('Failed to sign in e2e user')
   }
 
+  const bootstrapResult = await userClient.rpc('bootstrap_default_org_and_warehouse')
+  if (bootstrapResult.error) {
+    throw bootstrapResult.error
+  }
+
   const session = signInResult.data.session
   const projectRef = getProjectRef(supabaseUrl)
   const localStorageKey = `sb-${projectRef}-auth-token`

@@ -6,7 +6,7 @@
 ## 0. 文件目的與範圍
 
 - 涵蓋哪些 UC
-  - UC_01 Auth & Onboarding：magic link 登入與 callback
+  - UC_01 Auth & Onboarding：magic link 登入、callback、bootstrap RPC
 - 介面類型（Route Handlers vs Server Actions vs Supabase RPC）採用原則
 
 ## 1. 通用約定
@@ -45,6 +45,7 @@
 | --- | --- | --- | --- | --- | --- |
 | requestMagicLink | Client action | Supabase `auth.signInWithOtp` | Public | 發送 magic link | UC_01 |
 | authCallback | Route Handler | `GET /auth/callback` | Public | 驗證 magic link 並建立 session | UC_01 |
+| bootstrapDefaultOrgAndWarehouse | RPC | `bootstrap_default_org_and_warehouse()` | Authenticated | 建立/取得預設 org/warehouse | UC_01 |
 
 ## 3. 介面規格（逐項）
 
@@ -86,16 +87,40 @@
 - public
 
 **Request**
-- Query: `token_hash`, `type`, `next`
+- Query: `token_hash`, `type`, `next` 或 `code`
 
 **Response**
 - 307 redirect to `next`（預設 `/stock`）
 
 **Errors**
 - `AUTH_LINK_INVALID_OR_EXPIRED`
+- `BOOTSTRAP_FAILED`
 
 **Notes**
 - `next` 需經 sanitize，避免 open redirect
+
+### 3.3 `bootstrapDefaultOrgAndWarehouse`
+
+**Type**
+- RPC (Postgres function)
+
+**Purpose**
+- 取得或建立使用者預設 org + warehouse（idempotent）
+
+**Auth**
+- authenticated user
+
+**Request**
+- none
+
+**Response**
+- `{ org_id, warehouse_id }`
+
+**Errors**
+- `BOOTSTRAP_FAILED`
+
+**Notes**
+- 以 unique constraint + transaction 保證 idempotent
 
 ### 3.x `<name>`
 
