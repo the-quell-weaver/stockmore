@@ -163,7 +163,7 @@
 * 命名規範：
 
   * GitHub Actions（CI/CD）使用：`SUPABASE_STAGING_DB_URL`、`SUPABASE_PROD_DB_URL`。
-  * Vercel 僅設定：`NEXT_PUBLIC_SUPABASE_URL`、`NEXT_PUBLIC_SUPABASE_ANON_KEY`。
+  * Vercel 僅設定：`NEXT_PUBLIC_SUPABASE_URL` + `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`（建議）或 `NEXT_PUBLIC_SUPABASE_ANON_KEY`（相容 fallback）。
   * 明確禁止把 `SUPABASE_SERVICE_ROLE_KEY` 放進 Vercel（避免高權限金鑰外溢風險）。
 * 需要新增 env vars 時：
 

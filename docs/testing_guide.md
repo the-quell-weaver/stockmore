@@ -131,7 +131,7 @@ PLAYWRIGHT_BASE_URL=http://localhost:5566 npm --prefix src run test:e2e
 2. `node scripts/supabase/local-env.mjs`
 3. 確認 `src/.env.local` 至少包含：
    - `NEXT_PUBLIC_SUPABASE_URL`
-   - `NEXT_PUBLIC_SUPABASE_ANON_KEY`
+   - `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`（建議）或 `NEXT_PUBLIC_SUPABASE_ANON_KEY`（相容 fallback）
    - `SUPABASE_SERVICE_ROLE_KEY`
 
 注意：

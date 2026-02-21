@@ -17,7 +17,7 @@
 
 **Vercel（Preview + Production）**：
 - [ ] `NEXT_PUBLIC_SUPABASE_URL`
-- [ ] `NEXT_PUBLIC_SUPABASE_ANON_KEY`
+- [ ] `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`（建議）或 `NEXT_PUBLIC_SUPABASE_ANON_KEY`（相容 fallback）
 - [ ] （若有）任務排程/通知相關 env（例如 mail provider key）
 - [ ] 未設定 `SUPABASE_SERVICE_ROLE_KEY`（禁止放入 Vercel）。
 
@@ -87,4 +87,3 @@
 - [ ] 手動觸發 `Supabase Migrate Production` workflow（`workflow_dispatch`）。
 - [ ] 等待 `production` environment reviewer 核准後再執行 production job（該 job 需保留 `environment: production`）。
 - [ ] production 完成後，再做一次最小 smoke test（登入、主流程、關鍵頁面）。
-
