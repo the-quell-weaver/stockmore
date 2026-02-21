@@ -1,21 +1,23 @@
 "use client";
 
-import { useEffect } from "react";
-import { useRouter } from "next/navigation";
+import { useEffect, useRef } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 
 import { AUTH_ERROR_CODES, type AuthErrorCode } from "@/lib/auth/errors";
 import { sanitizeNextPath } from "@/lib/auth/validation";
 import { createClient } from "@/lib/supabase/client";
 
-type AuthExchangeClientProps = {
-  code: string | null;
-  next: string | null;
-};
-
-export function AuthExchangeClient({ code, next }: AuthExchangeClientProps) {
+export function AuthExchangeClient() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const hasStarted = useRef(false);
 
   useEffect(() => {
+    if (hasStarted.current) return;
+    hasStarted.current = true;
+
+    const code = searchParams.get("code");
+    const next = searchParams.get("next");
     const nextPath = sanitizeNextPath(next, "/stock");
 
     const redirectToLogin = (errorCode: AuthErrorCode) => {
@@ -51,7 +53,7 @@ export function AuthExchangeClient({ code, next }: AuthExchangeClientProps) {
     };
 
     void run();
-  }, [code, next, router]);
+  }, [router, searchParams]);
 
   return (
     <div className="rounded border border-border p-6 text-sm text-muted-foreground">
