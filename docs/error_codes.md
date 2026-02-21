@@ -30,6 +30,12 @@
 | `BOOTSTRAP_FAILED` | Auth | 500 | Yes | 初始化帳號失敗 | Onboarding | 可重試（需 idempotent） |
 | `AUTH_REQUIRED` | Auth | 401 | Yes | 請先登入 | Protected routes | 導向 `/login` |
 | `RLS_FORBIDDEN` | Permission | 403 | No | 你沒有權限存取此資源 | DB write/read | 跨 org 存取由 RLS 拒絕 |
+| `ITEM_NAME_REQUIRED` | Validation | 400 | Yes | 品項名稱為必填 | Items create/update | 表單欄位驗證 |
+| `ITEM_UNIT_REQUIRED` | Validation | 400 | Yes | 單位為必填 | Items create/update | 表單欄位驗證 |
+| `ITEM_MIN_STOCK_INVALID` | Validation | 400 | Yes | 最低庫存不可為負值 | Items create/update | 邊界值驗證 |
+| `ITEM_NAME_CONFLICT` | Domain | 409 | Yes | 品項名稱已存在 | Items create/update | `(org_id, lower(name))` unique |
+| `ITEM_NOT_FOUND` | Domain | 404 | No | 找不到品項 | Items update | id 不存在或不在授權範圍 |
+| `FORBIDDEN` | Permission | 403 | No | 你沒有此操作權限 | Items write | viewer / 非授權租戶 |
 
 ## 4. 錯誤碼詳述（逐條）
 
@@ -80,6 +86,51 @@
 - **Retryable**：可登入後重試
 - **User message**：請先登入
 - **Test coverage**：integration（route guard）
+
+### 4.6 `ITEM_NAME_REQUIRED`
+
+- **When**：item 名稱為空白
+- **Where**：`createItemAction`, `updateItemAction`
+- **HTTP status**：400
+- **Retryable**：可立即重試
+- **User message**：請輸入品項名稱
+- **Test coverage**：unit（validation）
+
+### 4.7 `ITEM_UNIT_REQUIRED`
+
+- **When**：item 單位為空白
+- **Where**：`createItemAction`, `updateItemAction`
+- **HTTP status**：400
+- **Retryable**：可立即重試
+- **User message**：請輸入單位
+- **Test coverage**：unit（validation）
+
+### 4.8 `ITEM_MIN_STOCK_INVALID`
+
+- **When**：`min_stock` 小於 0 或非數值
+- **Where**：`createItemAction`, `updateItemAction`
+- **HTTP status**：400
+- **Retryable**：可立即重試
+- **User message**：最低庫存需為 0 或正數
+- **Test coverage**：unit（validation）
+
+### 4.9 `ITEM_NAME_CONFLICT`
+
+- **When**：同 org 內已存在相同名稱（active item）
+- **Where**：`createItemAction`, `updateItemAction`
+- **HTTP status**：409
+- **Retryable**：可改名後重試
+- **User message**：品項名稱重複，請改用其他名稱
+- **Test coverage**：integration（DB unique + error mapping）
+
+### 4.10 `ITEM_NOT_FOUND`
+
+- **When**：更新目標 item 不存在或不在可見範圍
+- **Where**：`updateItemAction`
+- **HTTP status**：404
+- **Retryable**：不可直接重試（需確認目標 item）
+- **User message**：找不到該品項
+- **Test coverage**：integration（update not found）
 
 ## 5. 類別附錄（可選）
 

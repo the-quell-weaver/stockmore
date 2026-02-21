@@ -141,6 +141,5 @@
 - 回滾策略：保留 items 資料；若改模型（單標籤→多標籤）需提供 backward-compatible read。
 
 ## 15. Open Questions
-- Q1: tags 模型 MVP 要採「單一標籤」還是「多標籤」？（PRD 用語偏「標籤可選」；建議多標籤但可先簡化為單一）
-- Q2: Items 是否允許刪除？若不允許，MVP 先用 archived/soft-delete 哪一種？
-
+- Q1: tags 模型 MVP 決議採「單一標籤」，使用 `items.default_tag_id`（nullable，UI 可先不暴露選擇器，待 UC-04 連接）。
+- Q2: Items 刪除策略決議採「soft-delete」，使用 `items.is_deleted`，預設列表不顯示已封存。
