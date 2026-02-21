@@ -40,11 +40,7 @@ export async function handleAuthCallback(request: NextRequest) {
         await supabase.auth.exchangeCodeForSession(code);
       error = exchangeError ?? null;
     } else if (tokenHash && type) {
-      const { error: verifyError } = await supabase.auth.verifyOtp({
-        type,
-        token_hash: tokenHash,
-      });
-      error = verifyError ?? null;
+      error = await verifyMagicLinkToken(supabase, type, tokenHash, rawToken);
     } else {
       error = new Error("Missing auth code or token hash");
     }
@@ -72,4 +68,28 @@ export async function handleAuthCallback(request: NextRequest) {
 
   const redirectUrl = new URL(nextPath, requestUrl.origin);
   return NextResponse.redirect(redirectUrl);
+}
+
+async function verifyMagicLinkToken(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  type: EmailOtpType,
+  tokenHash: string,
+  rawToken: string | null,
+): Promise<Error | null> {
+  const primary = await supabase.auth.verifyOtp({
+    type,
+    token_hash: tokenHash,
+  });
+  if (!primary.error) return null;
+
+  // Some Supabase local/dev links still provide `token=...` that behaves like
+  // legacy token verification rather than token_hash verification.
+  if (!rawToken) return primary.error;
+
+  const legacy = await supabase.auth.verifyOtp({
+    type,
+    token: rawToken,
+  } as never);
+
+  return legacy.error ?? null;
 }
