@@ -3,6 +3,7 @@ import { Suspense } from "react";
 
 import { AUTH_ERROR_CODES } from "@/lib/auth/errors";
 import { createClient } from "@/lib/supabase/server";
+import { getAuthContext } from "@/lib/auth/context";
 
 async function StockContent() {
   const supabase = await createClient();
@@ -12,6 +13,9 @@ async function StockContent() {
     redirect(`/login?error=${AUTH_ERROR_CODES.AUTH_REQUIRED}&next=/stock`);
   }
 
+  const context = await getAuthContext(supabase);
+  const warehouseName = context?.warehouseName ?? "尚未建立";
+
   return (
     <div className="flex min-h-svh w-full items-center justify-center p-6 md:p-10">
       <div className="w-full max-w-xl space-y-4 rounded border border-border p-6">
@@ -20,10 +24,12 @@ async function StockContent() {
           <p className="text-sm text-muted-foreground">已登入</p>
         </div>
         <div className="rounded bg-muted p-4">
-          <p className="text-sm">倉庫：尚未建立</p>
-          <p className="text-sm text-muted-foreground">
-            完成 onboarding 後會顯示預設倉庫。
-          </p>
+          <p className="text-sm">倉庫：{warehouseName}</p>
+          {!context && (
+            <p className="text-sm text-muted-foreground">
+              完成 onboarding 後會顯示預設倉庫。
+            </p>
+          )}
         </div>
       </div>
     </div>

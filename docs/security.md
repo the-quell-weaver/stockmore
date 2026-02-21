@@ -23,6 +23,7 @@
 - Tenant key（`org_id`）的定義
 - `warehouse_id` 的角色（若適用）
 - 任何資料如何綁定 tenant（資料表層面的一致規則）
+- UC_01：`orgs`, `warehouses` 透過 `org_memberships` 綁定 `auth.uid()`
 
 ## 3. 角色與權限模型（RBAC）
 
@@ -36,6 +37,7 @@
 - 哪些表啟用 RLS（表清單）
 - 每張表的 access rule 概述（文字）
 - 禁止 client 偽造 tenant key 的策略（例如 org_id 只能從 membership 推導）
+- UC_01：`orgs`, `org_memberships`, `warehouses` 啟用 RLS
 
 ## 5. RLS Policies 規格（逐表）
 
@@ -49,6 +51,30 @@
 - **Update policy**：允許誰更新、哪些欄位不可改（如 org_id）
 - **Delete policy**：是否禁止；若允許需明確理由
 - **Notes**：特殊情況（system jobs、service role）
+
+### 5.1 `orgs`
+
+- **Row ownership rule**：存在 `org_memberships` 且 `user_id = auth.uid()`
+- **Select policy**：org member 可讀
+- **Insert policy**：`owner_user_id = auth.uid()` 且 `created_by = auth.uid()`
+- **Update policy**：僅 owner（`owner_user_id = auth.uid()`）
+- **Delete policy**：未開放
+
+### 5.2 `org_memberships`
+
+- **Row ownership rule**：`user_id = auth.uid()`
+- **Select policy**：使用者可讀自己的 membership
+- **Insert policy**：僅允許 `user_id = auth.uid()`，且 `org_id` 必須屬於 `auth.uid()` 的 org
+- **Update policy**：未開放
+- **Delete policy**：未開放
+
+### 5.3 `warehouses`
+
+- **Row ownership rule**：`org_id` 必須有 membership 且 `user_id = auth.uid()`
+- **Select policy**：org member 可讀
+- **Insert policy**：org member 可寫入，且 `created_by = auth.uid()`
+- **Update policy**：org member 可更新
+- **Delete policy**：未開放
 
 ## 6. Service Role / Jobs / Server-only Operations
 

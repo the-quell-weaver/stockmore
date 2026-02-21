@@ -112,6 +112,9 @@ PLAYWRIGHT_BASE_URL=http://localhost:5566 npm --prefix src run test:e2e
 
 - E2E 連不上 App：確認 app 正在跑、base URL 是否對到 `localhost:5566`。
 - E2E 連不上 Supabase：確認 `supabase start` 已執行，且 `.env.local` 已更新。
+- 若出現 `EPERM` 無法連線 `127.0.0.1:54321` 或無法綁定 `localhost:5566`：
+  - 這通常是執行環境禁止本機網路/port 監聽。
+  - 解法：改在允許本機網路的環境執行（本機終端），或使用有權限的執行方式啟動測試。
 
 ## 9. Production Auth URL 設定（Supabase）
 

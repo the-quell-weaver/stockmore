@@ -3,6 +3,7 @@ import { type NextRequest, NextResponse } from "next/server";
 
 import { createClient } from "@/lib/supabase/server";
 import { AUTH_ERROR_CODES, type AuthErrorCode } from "@/lib/auth/errors";
+import { bootstrapDefaultOrgAndWarehouse } from "@/lib/auth/bootstrap";
 import { sanitizeNextPath } from "@/lib/auth/validation";
 
 const DEFAULT_NEXT_PATH = "/stock";
@@ -53,6 +54,16 @@ export async function handleAuthCallback(request: NextRequest) {
       requestUrl,
       nextPath,
       AUTH_ERROR_CODES.AUTH_LINK_INVALID_OR_EXPIRED,
+    );
+  }
+
+  try {
+    await bootstrapDefaultOrgAndWarehouse(supabase);
+  } catch {
+    return redirectToLogin(
+      requestUrl,
+      nextPath,
+      AUTH_ERROR_CODES.BOOTSTRAP_FAILED,
     );
   }
 
