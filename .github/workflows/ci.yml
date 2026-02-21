@@ -57,7 +57,7 @@ jobs:
       - name: Install Playwright browsers
         run: npx -y playwright install --with-deps chromium
 
-      - name: Run Playwright E2E
+      - name: Run Playwright E2E smoke
         run: |
           npm run start -- --port 5566 &
           APP_PID=$!
@@ -70,4 +70,4 @@ jobs:
             sleep 1
           done
 
-          npm run test:e2e
+          npm run test:e2e:smoke

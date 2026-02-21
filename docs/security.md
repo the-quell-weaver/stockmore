@@ -37,7 +37,7 @@
 - 哪些表啟用 RLS（表清單）
 - 每張表的 access rule 概述（文字）
 - 禁止 client 偽造 tenant key 的策略（例如 org_id 只能從 membership 推導）
-- UC_01：`orgs`, `org_memberships`, `warehouses` 啟用 RLS
+- UC_01：`orgs`, `org_memberships`, `warehouses` 啟用 RLS（select/insert/update）。
 
 ## 5. RLS Policies 規格（逐表）
 
@@ -65,7 +65,7 @@
 - **Row ownership rule**：`user_id = auth.uid()`
 - **Select policy**：使用者可讀自己的 membership
 - **Insert policy**：僅允許 `user_id = auth.uid()`，且 `org_id` 必須屬於 `auth.uid()` 的 org
-- **Update policy**：未開放
+- **Update policy**：org owner 可更新（以 `orgs.owner_user_id = auth.uid()` 驗證）。
 - **Delete policy**：未開放
 
 ### 5.3 `warehouses`
@@ -98,6 +98,7 @@
 
 - 手動驗證步驟（兩帳號、兩 org）
 - integration tests 應覆蓋的案例清單（RLS、越權、偽造）
+- UC_01 PR#4 驗證重點：A/B 雙帳號下，A 無法讀取 B 的 org/warehouse、無法偽造 `org_id` insert、無法 update B membership。
 
 ## 10. Incident / 回應流程（簡版）
 

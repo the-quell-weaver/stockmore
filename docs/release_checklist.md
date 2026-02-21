@@ -38,6 +38,8 @@
 - [ ] **所有表都已啟用 RLS**（multi-tenant 資料表必須）。
 - [ ] RLS policies 覆蓋：select/insert/update（以及必要時 delete 的明確禁止）。
 - [ ] 用兩個不同帳號快速驗證：A 看不到 B 的資料。
+- [ ] 驗證跨租戶寫入被拒：A 不能用 B 的 `org_id` 新增 warehouse / membership。
+- [ ] 驗證 callback + bootstrap 可重跑且不重複建立 default org/warehouse。
 
 
 ## 3.1 GitHub `production` Environment Required Reviewers 設定

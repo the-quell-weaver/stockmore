@@ -29,6 +29,7 @@
 | `AUTH_LINK_INVALID_OR_EXPIRED` | Auth | 400 | Yes | Magic link 無效或過期 | Auth callback | 回到 `/login` 可重送 |
 | `BOOTSTRAP_FAILED` | Auth | 500 | Yes | 初始化帳號失敗 | Onboarding | 可重試（需 idempotent） |
 | `AUTH_REQUIRED` | Auth | 401 | Yes | 請先登入 | Protected routes | 導向 `/login` |
+| `RLS_FORBIDDEN` | Permission | 403 | No | 你沒有權限存取此資源 | DB write/read | 跨 org 存取由 RLS 拒絕 |
 
 ## 4. 錯誤碼詳述（逐條）
 
@@ -90,3 +91,12 @@
 ## 6. 變更紀錄（可選）
 
 - 新增/修改/棄用錯誤碼的紀錄
+
+### 4.5 `RLS_FORBIDDEN`
+
+- **When**：跨租戶讀寫（select/insert/update）被 RLS 拒絕
+- **Where**：`orgs`, `warehouses`, `org_memberships`
+- **HTTP status**：403
+- **Retryable**：不可直接重試（需切換為合法租戶）
+- **User message**：你沒有權限存取此資源
+- **Test coverage**：integration（multi-tenant RLS）
