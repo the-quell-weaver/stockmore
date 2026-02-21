@@ -30,6 +30,7 @@
 - Tenant context 缺失的處理（bootstrap / onboarding / error）
 - Loading / Empty / Error 的一致呈現規範
 - UC_01：bootstrap 失敗 → 導向 `/login?error=BOOTSTRAP_FAILED&next=/stock`
+- UC_01 PR#4：多租戶隔離在資料層由 RLS 保證，前端流程不提供跨 org 切換入口，避免錯誤期待。
 
 ### Protected route matrix（UC_01 PR#3）
 

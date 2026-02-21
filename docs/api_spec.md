@@ -47,6 +47,7 @@
 | authCallback | Route Handler | `GET /auth/callback` | Public | 驗證 magic link 並建立 session | UC_01 |
 | bootstrapDefaultOrgAndWarehouse | RPC | `bootstrap_default_org_and_warehouse()` | Authenticated | 建立/取得預設 org/warehouse | UC_01 |
 | stockPageGuard | Server page guard | `GET /stock` | Authenticated | 驗證 session 並回傳 stock 畫面 | UC_01 |
+| org/warehouse/membership RLS | DB Policy | `orgs`,`warehouses`,`org_memberships` | Authenticated | 阻擋跨租戶讀寫（AC3） | UC_01 |
 
 ## 3. 介面規格（逐項）
 
@@ -189,6 +190,7 @@
 
 - 每個介面至少對應一個：unit/integration/e2e
 - 指向測試檔案路徑或測試案例 ID（可選）
+- UC_01 PR#4：`src/tests/integration/rls/multi-tenant-auth.integration.test.ts` 驗證跨 org select/insert/update 被 RLS 阻擋。
 
 ## 7. 版本與相容性
 

@@ -63,6 +63,37 @@ npm --prefix src run dev
 npm --prefix src run test:e2e
 ```
 
+### 5.3.1 Codex CLI 快速執行
+
+在 Codex CLI 模式中，請使用統一腳本執行 E2E（包含環境準備與啟動 App）：
+
+```bash
+scripts/testing/run-e2e.sh
+```
+
+#### 參數說明（可選）
+
+可透過環境變數調整；除非必要，請使用預設值：
+
+- `E2E_HOST`：預設 `localhost`（**必須是 localhost**，因為 cookie domain 綁定）。
+- `E2E_PORT`：預設 `5566`。
+- `E2E_BASE_URL`：預設 `http://<host>:<port>`。
+- `E2E_READY_PATH`：預設 `/login`（避免首頁因 auth/SSR 卡住）。
+- `E2E_READY_ATTEMPTS`：預設 `10`。
+- `E2E_READY_TIMEOUT`：每次嘗試等待秒數，預設 `30`。
+
+範例：
+
+```bash
+# 需要更長等待時間（慢機器/首次編譯）
+E2E_READY_TIMEOUT=60 E2E_READY_ATTEMPTS=20 scripts/testing/run-e2e.sh
+```
+
+```bash
+# 改用其他 port（仍需 localhost）
+E2E_PORT=5577 scripts/testing/run-e2e.sh
+```
+
 ### 5.4 Base URL 注意事項（重要）
 
 - 預設 base URL：`http://localhost:5566`（見 `src/playwright.config.mjs`）

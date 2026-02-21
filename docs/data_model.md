@@ -176,12 +176,14 @@
 - 可向前相容原則（避免破壞性變更）
 - 資料遷移策略（rename/drop 的流程）
 - UC_01：`supabase/migrations/20260221000000_uc01_bootstrap.sql`
+- UC_01 PR#4：`supabase/migrations/20260222000000_uc01_rls_policies.sql` 補齊 `org_memberships` 的 update policy（owner 可更新本 org membership，維持多租戶隔離）。
 
 ## 9. Seed / Fixtures（測試資料）
 
 - 最小 seed 內容（哪些表必填）
 - 測試用 fixture 生成策略（兩 org、兩 user 等）
 - UC_01：integration tests 以 admin client 建立 user，呼叫 bootstrap RPC 建立 org/warehouse/membership
+- UC_01 PR#4：新增兩帳號/兩 org fixture，驗證 RLS 阻擋跨租戶 select/insert/update（AC3）。
 
 ## 10. 附錄
 
