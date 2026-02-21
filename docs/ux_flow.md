@@ -31,6 +31,14 @@
 - Loading / Empty / Error 的一致呈現規範
 - UC_01：bootstrap 失敗 → 導向 `/login?error=BOOTSTRAP_FAILED&next=/stock`
 
+### Protected route matrix（UC_01 PR#3）
+
+| Route | Middleware guard (`src/proxy.ts`) | Server guard | 未登入行為 |
+| --- | --- | --- | --- |
+| `/stock` | Yes | `requireUser` | redirect `/login?error=AUTH_REQUIRED&next=/stock` |
+| `/login` | No | No | 公開頁，不導向 |
+| `/auth/*` | No | callback 自行處理 token | 公開頁，不導向 |
+
 ## 4. Flow（逐 UC / 逐流程）
 
 > 每個流程用相同格式。

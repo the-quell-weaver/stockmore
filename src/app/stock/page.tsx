@@ -1,17 +1,12 @@
-import { redirect } from "next/navigation";
 import { Suspense } from "react";
 
-import { AUTH_ERROR_CODES } from "@/lib/auth/errors";
-import { createClient } from "@/lib/supabase/server";
 import { getAuthContext } from "@/lib/auth/context";
+import { requireUser } from "@/lib/auth/require-user";
+import { createClient } from "@/lib/supabase/server";
 
 async function StockContent() {
   const supabase = await createClient();
-  const { data, error } = await supabase.auth.getClaims();
-
-  if (error || !data?.claims) {
-    redirect(`/login?error=${AUTH_ERROR_CODES.AUTH_REQUIRED}&next=/stock`);
-  }
+  await requireUser(supabase, "/stock");
 
   const context = await getAuthContext(supabase);
   const warehouseName = context?.warehouseName ?? "尚未建立";

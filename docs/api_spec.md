@@ -46,6 +46,7 @@
 | requestMagicLink | Client action | Supabase `auth.signInWithOtp` | Public | 發送 magic link | UC_01 |
 | authCallback | Route Handler | `GET /auth/callback` | Public | 驗證 magic link 並建立 session | UC_01 |
 | bootstrapDefaultOrgAndWarehouse | RPC | `bootstrap_default_org_and_warehouse()` | Authenticated | 建立/取得預設 org/warehouse | UC_01 |
+| stockPageGuard | Server page guard | `GET /stock` | Authenticated | 驗證 session 並回傳 stock 畫面 | UC_01 |
 
 ## 3. 介面規格（逐項）
 
@@ -121,6 +122,30 @@
 
 **Notes**
 - 以 unique constraint + transaction 保證 idempotent
+
+### 3.4 `GET /stock`
+
+**Type**
+- App Router Server Page + Proxy guard
+
+**Purpose**
+- 提供 UC_01 登入完成後的受保護落地頁，並可讀取 server-side org/warehouse context。
+
+**Auth**
+- authenticated user
+
+**Request**
+- none
+
+**Response**
+- 200：渲染 stock 頁面，含 `getAuthContext()` 查得的倉庫資訊。
+- 未登入：redirect 到 `/login?error=AUTH_REQUIRED&next=/stock`。
+
+**Errors**
+- `AUTH_REQUIRED`
+
+**Notes**
+- 先經 `src/proxy.ts` 的 middleware guard，再由 `requireUser()` 在 server component 再驗證一次。
 
 ### 3.x `<name>`
 

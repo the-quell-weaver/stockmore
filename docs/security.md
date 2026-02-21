@@ -103,3 +103,10 @@
 
 - 發現資料越權時：立即措施（關閉入口、回滾、撤銷 key）
 - 後續修補：補測試、補文件
+
+
+## 11. Session 驗證路徑（UC_01 PR#3）
+
+- **Middleware/Proxy guard**：`src/proxy.ts` 僅攔截 `/stock`，透過 `updateSession` 檢查 claims，未登入即導向 login。
+- **Server guard**：`src/lib/auth/require-user.ts` 在 `/stock` server component 內再次驗證，避免 middleware 被略過。
+- **Tenant context**：登入後由 `getAuthContext()` 自 server-side membership/warehouse 查詢 `org_id`、`warehouse_id`，不接受 client 傳入 tenant key。
