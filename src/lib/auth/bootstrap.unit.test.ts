@@ -1,4 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
+import type { SupabaseClient } from "@supabase/supabase-js";
 
 import {
   bootstrapDefaultOrgAndWarehouse,
@@ -25,7 +26,7 @@ describe("bootstrapDefaultOrgAndWarehouse", () => {
     });
 
     const result = await bootstrapDefaultOrgAndWarehouse(
-      supabase as unknown as any,
+      supabase as unknown as SupabaseClient,
     );
 
     expect(result).toEqual({ orgId: "org-1", warehouseId: "wh-1" });
@@ -46,8 +47,8 @@ describe("bootstrapDefaultOrgAndWarehouse", () => {
     });
 
     const [first, second] = await Promise.all([
-      bootstrapDefaultOrgAndWarehouse(supabase as unknown as any),
-      bootstrapDefaultOrgAndWarehouse(supabase as unknown as any),
+      bootstrapDefaultOrgAndWarehouse(supabase as unknown as SupabaseClient),
+      bootstrapDefaultOrgAndWarehouse(supabase as unknown as SupabaseClient),
     ]);
 
     expect(first).toEqual({ orgId: "org-1", warehouseId: "wh-1" });
@@ -59,7 +60,7 @@ describe("bootstrapDefaultOrgAndWarehouse", () => {
     supabase.auth.getUser.mockResolvedValue({ data: { user: null }, error: null });
 
     await expect(
-      bootstrapDefaultOrgAndWarehouse(supabase as unknown as any),
+      bootstrapDefaultOrgAndWarehouse(supabase as unknown as SupabaseClient),
     ).rejects.toBeInstanceOf(BootstrapError);
   });
 });

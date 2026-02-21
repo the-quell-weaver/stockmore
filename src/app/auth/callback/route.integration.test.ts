@@ -6,7 +6,9 @@ import { GET } from "./route";
 
 const verifyOtp = vi.fn();
 const exchangeCodeForSession = vi.fn();
-const bootstrapDefaultOrgAndWarehouse = vi.fn();
+const { bootstrapDefaultOrgAndWarehouse } = vi.hoisted(() => ({
+  bootstrapDefaultOrgAndWarehouse: vi.fn(),
+}));
 
 vi.mock("../../../lib/supabase/server", () => ({
   createClient: vi.fn(async () => ({
