@@ -14,7 +14,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 import {
   AUTH_ERROR_CODES,
@@ -45,6 +45,26 @@ export function LoginForm({
     ? getAuthErrorMessage(paramError)
     : null;
   const effectiveError = error ?? (showParamError ? paramErrorMessage : null);
+
+  useEffect(() => {
+    let isMounted = true;
+    const supabase = createClient();
+
+    void (async () => {
+      try {
+        const { error } = await supabase.auth.getSession();
+        if (isMounted && isRefreshTokenNotFoundError(error)) {
+          await supabase.auth.signOut({ scope: "local" }).catch(() => undefined);
+        }
+      } catch {
+        // Ignore background recovery failures; user can still request magic link.
+      }
+    })();
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
