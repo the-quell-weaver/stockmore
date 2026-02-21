@@ -74,6 +74,8 @@ Vercel Agent 負責：
   - 提醒規則、排程、去重、重試策略。
 - `docs/TEST_STRATEGY.md`
   - 單元/整合/最小 e2e 覆蓋。
+- `docs/TESTING_GUIDE.md`
+  - 本機測試執行流程（unit/integration/e2e）與常見問題。
 - `docs/RELEASE_CHECKLIST.md`
   - 上線檢查（env、migrations、RLS、jobs、回滾）。
 

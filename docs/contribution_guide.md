@@ -110,6 +110,8 @@
 * **Integration（含 DB + RLS）**：跨 org 權限、寫入限制
 * **Minimal e2e（冒煙）**：至少覆蓋「happy path」
 
+> 本機測試流程（含 Supabase 與 E2E 操作）請見 `docs/testing_guide.md`。
+
 ### 5.2 對外行為 > 內部實作
 
 我們用測試驗證「預期行為」，避免測試只是複製實作細節：
@@ -117,15 +119,14 @@
 * 測結果（資料狀態 / response / UI 狀態）
 * 少測內部私有函式（除非是純函式且有必要）
 
+### 5.2.1 修正測試失敗的原則
+
+- 修正任何測試失敗後，**必須重跑該測試**並確認通過。
+- 若修正影響範圍較大，請補跑相鄰層級測試（例如 unit -> integration 或 e2e）。
+
 ### 5.3 Integration tests（需要 DB）規範
 
-- 目前 `.github/workflows/ci.yml`（`pull_request` 觸發）會先執行 `supabase start` + `supabase db reset`，再跑 `npm run supabase:local-env`、unit/integration tests，確保 schema（含 migrations/RLS/policies）可從空資料庫重建且測試在一致環境下執行。
-- 測試資料不依賴 seed：每個 integration test 應在測試內自行建立所需資料（Arrange），並在測試結束後清除（Cleanup）。
-- Arrange/Cleanup 應與測試同檔案或同測試套件內明確可見，禁止隱性共享全域測試資料。
-- 清理策略建議：
-  - 優先使用 transaction rollback（若測試框架/連線方式支援）。
-  - 或在 afterEach/afterAll 以 TRUNCATE ... RESTART IDENTITY CASCADE 清理測試涉及的表。
-- 測試之間不得共享狀態，確保可平行執行與可重跑。
+請見 `docs/testing_guide.md`。
 
 ## 6. DB 變更（Migrations / RLS）
 
@@ -143,29 +144,7 @@
 
 ### 6.1 何時使用 `scripts/supabase/local-env.*`
 
-`scripts/supabase/local-env.*`（目前為 `scripts/supabase/local-env.mjs`）的用途是把 local Supabase 的連線資訊同步到 app 的 `src/.env.local`。
-
-建議在以下情境執行：
-
-- 第一次 clone 專案後，完成 `supabase start` 之後。
-- local Supabase 重新啟動、reset、或版本更新後（避免 key/url 漂移）。
-- 執行需要 local Supabase 的 integration/e2e 測試前。
-- `.env.local` 被清空、遺失，或你懷疑內容過期時。
-
-標準流程（與 CI 的 local env 生成步驟一致）：
-
-1. `supabase start`
-2. `npm run supabase:local-env`（等價於執行 `node scripts/supabase/local-env.mjs`）
-3. 確認 `src/.env.local` 至少包含：
-   - `NEXT_PUBLIC_SUPABASE_URL`
-   - `NEXT_PUBLIC_SUPABASE_ANON_KEY`
-   - `SUPABASE_SERVICE_ROLE_KEY`
-
-注意：
-
-- 腳本可重跑（idempotent），會更新既有 key 並補齊缺漏 key，不應產生重複。
-- 若 local Supabase 尚未啟動，腳本會提示先執行 `supabase start`。
-- 輸出檔固定為 `src/.env.local`，請勿將該檔提交到 git。
+請見 `docs/testing_guide.md`。
 
 ## 7. 設計與 UI（手機優先）
 

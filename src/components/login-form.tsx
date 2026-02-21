@@ -13,35 +13,74 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useSearchParams } from "next/navigation";
 import { useState } from "react";
+
+import {
+  AUTH_ERROR_CODES,
+  getAuthErrorMessage,
+  parseAuthErrorCode,
+} from "@/lib/auth/errors";
+import { isValidEmail, sanitizeNextPath } from "@/lib/auth/validation";
+
+const DEFAULT_NEXT_PATH = "/stock";
 
 export function LoginForm({
   className,
   ...props
 }: React.ComponentPropsWithoutRef<"div">) {
   const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
-  const router = useRouter();
+  const [success, setSuccess] = useState(false);
+  const [showParamError, setShowParamError] = useState(true);
+  const searchParams = useSearchParams();
+
+  const nextPath = sanitizeNextPath(
+    searchParams.get("next"),
+    DEFAULT_NEXT_PATH,
+  );
+  const paramError = parseAuthErrorCode(searchParams.get("error"));
+  const paramErrorMessage = paramError
+    ? getAuthErrorMessage(paramError)
+    : null;
+  const effectiveError = error ?? (showParamError ? paramErrorMessage : null);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    const supabase = createClient();
     setIsLoading(true);
     setError(null);
+    setSuccess(false);
+    setShowParamError(false);
+
+    const normalizedEmail = email.trim();
+    if (!isValidEmail(normalizedEmail)) {
+      setError(getAuthErrorMessage(AUTH_ERROR_CODES.AUTH_EMAIL_INVALID));
+      setIsLoading(false);
+      return;
+    }
+
+    const supabase = createClient();
 
     try {
-      const { error } = await supabase.auth.signInWithPassword({
-        email,
-        password,
+      const normalizedOrigin = normalizeLoopbackOrigin(window.location);
+      const redirectUrl = new URL("/auth/callback", normalizedOrigin);
+      redirectUrl.searchParams.set("next", nextPath);
+      redirectUrl.searchParams.set("type", "magiclink");
+
+      // Keep redirect URL construction in one place for testing and audits.
+
+      const { error } = await supabase.auth.signInWithOtp({
+        email: normalizedEmail,
+        options: {
+          emailRedirectTo: redirectUrl.toString(),
+        },
       });
       if (error) throw error;
-      // Update this route to redirect to an authenticated route. The user already has an active session.
-      router.push("/protected");
+      setSuccess(true);
     } catch (error: unknown) {
       setError(error instanceof Error ? error.message : "An error occurred");
+      setSuccess(false);
     } finally {
       setIsLoading(false);
     }
@@ -53,7 +92,7 @@ export function LoginForm({
         <CardHeader>
           <CardTitle className="text-2xl">Login</CardTitle>
           <CardDescription>
-            Enter your email below to login to your account
+            Enter your email and we&apos;ll send you a magic link to sign in.
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -68,37 +107,24 @@ export function LoginForm({
                   required
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
+                  suppressHydrationWarning
                 />
               </div>
-              <div className="grid gap-2">
-                <div className="flex items-center">
-                  <Label htmlFor="password">Password</Label>
-                  <Link
-                    href="/auth/forgot-password"
-                    className="ml-auto inline-block text-sm underline-offset-4 hover:underline"
-                  >
-                    Forgot your password?
-                  </Link>
-                </div>
-                <Input
-                  id="password"
-                  type="password"
-                  required
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                />
-              </div>
-              {error && <p className="text-sm text-red-500">{error}</p>}
+              {effectiveError && (
+                <p className="text-sm text-red-500">{effectiveError}</p>
+              )}
+              {success && (
+                <p className="text-sm text-emerald-600">
+                  Check your email for the magic link to sign in.
+                </p>
+              )}
               <Button type="submit" className="w-full" disabled={isLoading}>
-                {isLoading ? "Logging in..." : "Login"}
+                {isLoading ? "Sending..." : "Send magic link"}
               </Button>
             </div>
             <div className="mt-4 text-center text-sm">
               Don&apos;t have an account?{" "}
-              <Link
-                href="/auth/sign-up"
-                className="underline underline-offset-4"
-              >
+              <Link href="/auth/sign-up" className="underline underline-offset-4">
                 Sign up
               </Link>
             </div>
@@ -107,4 +133,12 @@ export function LoginForm({
       </Card>
     </div>
   );
+}
+
+function normalizeLoopbackOrigin(location: Location): string {
+  const hostname = location.hostname;
+  if (hostname === "127.0.0.1" || hostname === "[::1]" || hostname === "::1") {
+    return location.origin.replace(hostname, "localhost");
+  }
+  return location.origin;
 }
