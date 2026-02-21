@@ -1,8 +1,8 @@
 <!-- Generated from template.md for UC-01 -->
 
 # Feature: Auth & Onboarding（登入與預設倉庫建立/取得）
-- **Doc**: docs/features/auth-and-onboarding.md
-- **Status**: Draft
+- **Doc**: docs/features/uc_01_auth_onboarding.md
+- **Status**: Implemented
 - **PRD linkage**: UC-01（使用者登入並建立/取得預設倉庫）
 - **Last updated**: 2026-02-19
 
@@ -53,9 +53,9 @@
 4. 導向 `/stock`（或首頁），並在頂端顯示倉庫名稱（MVP 固定單倉庫）。
 
 ### 5.3 Alternate / edge flows
-- 空狀態：首次登入 → 顯示「開始建立你的庫存」CTA。
+- 空狀態：首次登入若 context 尚未可用，顯示「完成 onboarding 後會顯示預設倉庫」提示文字（CTA UI 納入 backlog）。
 - 錯誤狀態：magic link 過期/無效 → 回到 `/login` 並提示可重新寄送。
-- network：callback/bootstrap 失敗 → 顯示重試按鈕（需 idempotent）。
+- network：callback/bootstrap 失敗 → 回到 `/login`，使用者可直接重送 magic link 重試（需 idempotent）。
 
 ### 5.4 UI notes
 - 表單欄位：Email（必填，基本格式驗證）。
@@ -89,7 +89,7 @@
   - Response: `{ ok: true }`
   - AuthZ: public
   - Validation: email 格式
-  - Failure: `AUTH_EMAIL_INVALID`, `AUTH_RATE_LIMITED`
+  - Failure: `AUTH_EMAIL_INVALID`（其餘 provider error 以 generic auth error 顯示）
 
 - `action bootstrapDefaultOrgAndWarehouse()`
   - Request: none
@@ -125,7 +125,9 @@
 ## 13. Test Strategy (feature-level)
 - Unit tests: bootstrap 的「已存在/不存在」分支、idempotency。
 - Integration tests (DB + RLS): 驗證 membership/org RLS；跨 org 查詢失敗。
-- Minimal e2e: login → callback → 進入 stock view（顯示倉庫名稱）。
+- Minimal e2e（smoke，拆成兩段）：
+  - login 頁可成功送出 magic link request（含 callback redirect 參數檢查）
+  - 已登入使用者可進入 `/stock` 並顯示預設倉庫名稱
 - Fixtures: 建立兩個 user、兩個 org。
 
 ## 14. Rollout / Migration Plan (if applicable)
@@ -137,3 +139,4 @@
 ## 15. Open Questions
 - （已釐清）MVP 先建立 `org_memberships` 以鋪路共享/角色；但 MVP 不配置相應 UI/商業邏輯，僅在 bootstrap 寫入預設值（role=owner 等價）。
 - （Backlog）預設 warehouse 命名策略的 UI 修改為低優先需求，已記錄於 PRD 的 Backlog 章節。
+- （Backlog）端到端 callback 全流程（login → callback → stock）e2e 暫以 smoke 分段覆蓋；完整單測試串接流程後續補齊。

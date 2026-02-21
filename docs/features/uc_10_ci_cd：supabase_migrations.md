@@ -58,7 +58,7 @@
 5. ✅ PR CI 會執行 `supabase db reset`，驗證 migrations（含 RLS/policies）可從空 DB 重建。
 6. ✅ 測試包含需要資料庫的 integration tests；測試資料採 **C** 策略：測試內自行建立資料，測後清除；不依賴 `supabase/seed.sql`。
 7. ✅ 測試框架為 **Vitest**。
-8. ✅ CI 會跑 **unit + integration + e2e**。
+8. ✅ CI 會跑 **unit + integration + e2e smoke**（最小 happy path）。
 9. ✅ e2e 工具為 **Playwright**，範圍採 **最小 happy path**。
 10. ✅ e2e 在 CI 使用 `next build && next start` 後再跑（更接近 production）。
 11. ✅ e2e baseURL 固定為 `http://localhost:5566`（固定 port）。
@@ -67,7 +67,7 @@
 14. ✅ Supabase Auth 需要 email confirm 才能登入（CI 需自動 confirm）。
 15. ✅ production migrations 佈署採用 **手動按鈕（workflow_dispatch）**。
 16. ✅ production release gate 採 **GitHub Environments required reviewers**（更硬的限制）。
-17. ✅ staging migrations deploy 僅在 `supabase/**` 變更時觸發（MVP 先只處理 migrations）。
+17. ✅ staging migrations deploy 僅在 `supabase/migrations/**`（可加 `supabase/config.toml`）變更時觸發。
 18. ✅ 遠端 migrations 佈署遵守「Developer 做不到就不放 CI」原則：
     - bot 角色為 **Developer**。
     - 遠端佈署採 **DB connection string（DB_URL）** 方式執行 `supabase db push --db-url ...`。
@@ -119,13 +119,13 @@
   7) ✅ `next build`
   8) ✅ `next start -p 5566`（固定 port，對應 Playwright baseURL）
   9) ✅ Playwright：測試前用 **Supabase Admin API（service role）** 建立測試 user 並 **自動 email confirm**
-  10) ✅ 跑 e2e tests（Playwright；最小 happy path）
+  10) ✅ 跑 e2e smoke tests（Playwright；最小 happy path）
 
 > 設計重點：不依賴 seed，讓測試彼此獨立、可平行、可重跑。
 
 ### 6.3 GitHub Actions — main 部署（staging）
 
-- 觸發：`push` to `main` 且變更包含 `supabase/**`。
+- 觸發：`push` to `main` 且變更包含 `supabase/migrations/**`（可加 `supabase/config.toml`）。
 - 範圍（MVP）：先只處理 migrations
   - `supabase/migrations/**`
   - （可選）`supabase/config.toml`
@@ -152,7 +152,8 @@
 環境變數建議（最小集合）：
 
 - `NEXT_PUBLIC_SUPABASE_URL`
-- `NEXT_PUBLIC_SUPABASE_ANON_KEY`
+- `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`（建議）
+- `NEXT_PUBLIC_SUPABASE_ANON_KEY`（相容 fallback，可與 publishable 擇一）
 
 Server-only（若你有後端需要管理權限/排程/管理 API 才會用到，且必須只在 server runtime 使用）：
 
@@ -248,10 +249,12 @@ Server-only（若你有後端需要管理權限/排程/管理 API 才會用到�
 #### T0-2 Vercel Environments（Preview / Production）（Preview / Production）（Preview / Production）（Preview / Production）（Preview / Production）
 - [ ] Vercel Preview env vars 指向 staging：
   - `NEXT_PUBLIC_SUPABASE_URL`
-  - `NEXT_PUBLIC_SUPABASE_ANON_KEY`
+  - `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`（建議）
+  - `NEXT_PUBLIC_SUPABASE_ANON_KEY`（相容 fallback，可擇一）
 - [ ] Vercel Production env vars 指向 production：
   - `NEXT_PUBLIC_SUPABASE_URL`
-  - `NEXT_PUBLIC_SUPABASE_ANON_KEY`
+  - `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`（建議）
+  - `NEXT_PUBLIC_SUPABASE_ANON_KEY`（相容 fallback，可擇一）
 - [ ] 目前不設定 `SUPABASE_SERVICE_ROLE_KEY`（降低外洩風險）；需要時再加。
 
 #### T0-3 Codex 工作方式（最重要的規則）
@@ -273,6 +276,7 @@ Server-only（若你有後端需要管理權限/排程/管理 API 才會用到�
   - ✅ 產出到 `src/.env.local`
   - 檔案內容至少包含：
     - `NEXT_PUBLIC_SUPABASE_URL=<local url>`
+    - `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=<local publishable or anon>`
     - `NEXT_PUBLIC_SUPABASE_ANON_KEY=<local anon>`
     - `SUPABASE_SERVICE_ROLE_KEY=<local service role>`（僅 CI/local；不要上 Vercel）
 - [ ] 在 `docs/contribution_guide.md` 補上使用方式（新進開發者可照做）。
@@ -284,13 +288,13 @@ Server-only（若你有後端需要管理權限/排程/管理 API 才會用到�
 - [ ] ✅ `supabase start` + ✅ `supabase db reset`
 - [ ] ✅ 跑 tests（Vitest：unit + integration）
 - [ ] ✅ `next build && next start -p 5566`
-- [ ] ✅ 跑 Playwright e2e（最小 happy path）
+- [ ] ✅ 跑 Playwright e2e smoke（最小 happy path）
   - [ ] 在 Playwright test setup：用 local supabase 的 **Admin API（service role）** 建立測試 user
   - [ ] 因為需要 email confirm：在 setup 內 **自動 confirm**（透過 Admin API）
 
 ### T3 — 建立 GitHub Actions：main → staging migrations deploy
 - [ ] 新增 `.github/workflows/supabase-migrate-staging.yml`
-- [ ] 觸發：`push` to main 且 `paths: supabase/**`
+- [ ] 觸發：`push` to main 且 `paths: supabase/migrations/**`（可加 `supabase/config.toml`）
 - [ ] MVP 先只處理 `supabase/migrations/**`（可在 workflow 內再做路徑判斷/分支）
 - [ ] 使用 DB URL：
   - `supabase db push --db-url "$SUPABASE_STAGING_DB_URL" --dry-run`
@@ -336,6 +340,8 @@ Server-only（若你有後端需要管理權限/排程/管理 API 才會用到�
    - RLS/policy 要求
    - release 檢查與回滾
 
+> Backlog：CI 如需從 smoke 擴充為 full e2e，另開工作項調整時長與穩定性門檻。
+
 ---
 
 ## 9. 風險與回滾（Risks & Rollback）
@@ -355,4 +361,3 @@ Server-only（若你有後端需要管理權限/排程/管理 API 才會用到�
 > 目前所有關鍵決策已定案（含 `.env.local` 放置位置：`src/.env.local`，以及 production environment required reviewers）。本節暫無待確認事項。
 
 （若未來要收斂 DB_URL 權限，或要把 `supabase/functions/**` 納入自動部署，再回來新增。）
-

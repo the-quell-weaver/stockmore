@@ -6,6 +6,10 @@ import { AUTH_ERROR_CODES } from "@/lib/auth/errors";
 import { hasEnvVars } from "../utils";
 
 export async function updateSession(request: NextRequest) {
+  const supabaseKey =
+    process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY ??
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+
   let supabaseResponse = NextResponse.next({
     request,
   });
@@ -20,7 +24,7 @@ export async function updateSession(request: NextRequest) {
   // variable. Always create a new one on each request.
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY!,
+    supabaseKey!,
     {
       cookies: {
         getAll() {
