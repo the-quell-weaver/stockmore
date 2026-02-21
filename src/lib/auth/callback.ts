@@ -34,19 +34,22 @@ export async function handleAuthCallback(request: NextRequest) {
 
   const supabase = await createClient();
   let error: Error | null = null;
-
-  if (code) {
-    const { error: exchangeError } =
-      await supabase.auth.exchangeCodeForSession(code);
-    error = exchangeError ?? null;
-  } else if (tokenHash && type) {
-    const { error: verifyError } = await supabase.auth.verifyOtp({
-      type,
-      token_hash: tokenHash,
-    });
-    error = verifyError ?? null;
-  } else {
-    error = new Error("Missing auth code or token hash");
+  try {
+    if (code) {
+      const { error: exchangeError } =
+        await supabase.auth.exchangeCodeForSession(code);
+      error = exchangeError ?? null;
+    } else if (tokenHash && type) {
+      const { error: verifyError } = await supabase.auth.verifyOtp({
+        type,
+        token_hash: tokenHash,
+      });
+      error = verifyError ?? null;
+    } else {
+      error = new Error("Missing auth code or token hash");
+    }
+  } catch (caught) {
+    error = caught instanceof Error ? caught : new Error("Auth callback failed");
   }
 
   if (error) {

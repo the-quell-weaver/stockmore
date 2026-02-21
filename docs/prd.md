@@ -314,6 +314,15 @@ C) **純本地工作（Local-first / On-device）— 後續功能**
 * 後端邏輯需能被搬移到使用者裝置上運行（或以等價方式重用同一套 domain）。
 * 可依「滿足單位」彙總統計（例如：乾糧總單位、飲水總單位）以協助儲
 
+### 8.18 Dev Compiler 穩定性（Turbopack）— 後續功能
+
+* 已觀察在部分本機環境（例如 WSL + 掛載檔案系統）`next dev` 會卡在 `Compiling /login ...`。
+* MVP 開發流程先固定使用 `webpack`（`next dev --webpack`、`next build --webpack`）確保可用性。
+* 後續需建立一個獨立技術工作項：
+  * 蒐集可重現條件（OS/Node/Next 版本、檔案系統、網路）
+  * 最小重現專案與 log
+  * 評估升級 Next 或調整設定後再切回 Turbopack 的時機
+
 ## 9. 仍待釐清（Questions to Confirm）
 
 * Q1: MVP 預設通知開關要預設開或關？（建議：預設關，使用者明確啟用後才寄送。）

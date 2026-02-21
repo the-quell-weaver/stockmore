@@ -70,12 +70,21 @@ export function LoginForm({
 
       // Keep redirect URL construction in one place for testing and audits.
 
-      const { error } = await supabase.auth.signInWithOtp({
+      let { error } = await supabase.auth.signInWithOtp({
         email: normalizedEmail,
         options: {
           emailRedirectTo: redirectUrl.toString(),
         },
       });
+      if (isRefreshTokenNotFoundError(error)) {
+        await supabase.auth.signOut({ scope: "local" }).catch(() => undefined);
+        ({ error } = await supabase.auth.signInWithOtp({
+          email: normalizedEmail,
+          options: {
+            emailRedirectTo: redirectUrl.toString(),
+          },
+        }));
+      }
       if (error) throw error;
       setSuccess(true);
     } catch (error: unknown) {
@@ -141,4 +150,13 @@ function normalizeLoopbackOrigin(location: Location): string {
     return location.origin.replace(hostname, "localhost");
   }
   return location.origin;
+}
+
+function isRefreshTokenNotFoundError(error: unknown): boolean {
+  if (!error || typeof error !== "object") return false;
+  const candidate = error as { code?: string; message?: string };
+  return (
+    candidate.code === "refresh_token_not_found" ||
+    candidate.message?.includes("Refresh Token Not Found") === true
+  );
 }
