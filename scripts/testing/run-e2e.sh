@@ -8,6 +8,10 @@ READY_PATH="${E2E_READY_PATH:-/login}"
 READY_ATTEMPTS="${E2E_READY_ATTEMPTS:-10}"
 READY_TIMEOUT="${E2E_READY_TIMEOUT:-30}"
 
+# Notes:
+# - Keep HOST as "localhost" because Playwright auth state cookies are scoped to localhost.
+# - READY_PATH defaults to /login to avoid homepage auth/server-side gating.
+
 cleanup() {
   if [[ -n "${APP_PID:-}" ]] && kill -0 "$APP_PID" >/dev/null 2>&1; then
     kill "$APP_PID"
