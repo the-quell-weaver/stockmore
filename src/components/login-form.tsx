@@ -14,7 +14,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 
 import {
   AUTH_ERROR_CODES,
@@ -46,26 +46,6 @@ export function LoginForm({
     : null;
   const effectiveError = error ?? (showParamError ? paramErrorMessage : null);
 
-  useEffect(() => {
-    let isMounted = true;
-    const supabase = createClient();
-
-    void (async () => {
-      try {
-        const { error } = await supabase.auth.getSession();
-        if (isMounted && isRefreshTokenNotFoundError(error)) {
-          await supabase.auth.signOut({ scope: "local" }).catch(() => undefined);
-        }
-      } catch {
-        // Ignore background recovery failures; user can still request magic link.
-      }
-    })();
-
-    return () => {
-      isMounted = false;
-    };
-  }, []);
-
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
@@ -83,6 +63,12 @@ export function LoginForm({
     const supabase = createClient();
 
     try {
+      // Recover stale local auth state before starting a new PKCE flow.
+      const { error: sessionError } = await supabase.auth.getSession();
+      if (isRefreshTokenNotFoundError(sessionError)) {
+        await supabase.auth.signOut({ scope: "local" }).catch(() => undefined);
+      }
+
       const normalizedOrigin = normalizeLoopbackOrigin(window.location);
       const redirectUrl = new URL("/auth/callback", normalizedOrigin);
       redirectUrl.searchParams.set("next", nextPath);
