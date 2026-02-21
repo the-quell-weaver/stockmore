@@ -86,7 +86,6 @@ export function LoginForm({
       const normalizedOrigin = normalizeLoopbackOrigin(window.location);
       const redirectUrl = new URL("/auth/callback", normalizedOrigin);
       redirectUrl.searchParams.set("next", nextPath);
-      redirectUrl.searchParams.set("type", "magiclink");
 
       // Keep redirect URL construction in one place for testing and audits.
 

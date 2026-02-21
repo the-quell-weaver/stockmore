@@ -8,5 +8,10 @@ export function createClient() {
   return createBrowserClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     supabaseKey!,
+    {
+      auth: {
+        flowType: "pkce",
+      },
+    },
   );
 }
