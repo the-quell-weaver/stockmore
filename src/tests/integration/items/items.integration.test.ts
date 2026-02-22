@@ -69,6 +69,26 @@ async function createTestUser() {
   return { userId: data.user.id, email, password };
 }
 
+async function cleanupTestUser(userId: string) {
+  const memberships = await adminClient
+    .from("org_memberships")
+    .select("org_id")
+    .eq("user_id", userId);
+  expect(memberships.error).toBeNull();
+
+  const orgIds = Array.from(
+    new Set((memberships.data ?? []).map((row) => row.org_id).filter(Boolean)),
+  );
+
+  if (orgIds.length > 0) {
+    const deleteOrgs = await adminClient.from("orgs").delete().in("id", orgIds);
+    expect(deleteOrgs.error).toBeNull();
+  }
+
+  const deleted = await adminClient.auth.admin.deleteUser(userId);
+  expect(deleted.error).toBeNull();
+}
+
 async function signIn(email: string, password: string) {
   const client = createClient(supabaseUrl, anonKey, {
     auth: { autoRefreshToken: false, persistSession: false },
@@ -146,7 +166,7 @@ describe("items service integration (UC_02)", () => {
       const deleted = withDeleted.find((item) => item.id === created.id);
       expect(deleted?.isDeleted).toBe(true);
     } finally {
-      await adminClient.auth.admin.deleteUser(user.userId);
+      await cleanupTestUser(user.userId);
     }
   });
 
@@ -206,8 +226,8 @@ describe("items service integration (UC_02)", () => {
         .eq("org_id", orgA.org_id);
       expect(ownOrgRead.error).toBeNull();
     } finally {
-      await adminClient.auth.admin.deleteUser(userA.userId);
-      await adminClient.auth.admin.deleteUser(userB.userId);
+      await cleanupTestUser(userA.userId);
+      await cleanupTestUser(userB.userId);
     }
   });
 
@@ -222,10 +242,14 @@ describe("items service integration (UC_02)", () => {
       await createItem(asServiceClient(client), { name, unit: "pcs", minStock: 0 });
 
       await expect(
-        createItem(asServiceClient(client), { name, unit: "box", minStock: 0 }),
+        createItem(asServiceClient(client), {
+          name: name.toUpperCase(),
+          unit: "box",
+          minStock: 0,
+        }),
       ).rejects.toMatchObject({ code: ITEM_ERROR_CODES.ITEM_NAME_CONFLICT });
     } finally {
-      await adminClient.auth.admin.deleteUser(user.userId);
+      await cleanupTestUser(user.userId);
     }
   });
 
@@ -240,7 +264,7 @@ describe("items service integration (UC_02)", () => {
         updateItem(asServiceClient(client), nonExistentId, { note: "ghost" }),
       ).rejects.toMatchObject({ code: ITEM_ERROR_CODES.ITEM_NOT_FOUND });
     } finally {
-      await adminClient.auth.admin.deleteUser(user.userId);
+      await cleanupTestUser(user.userId);
     }
   });
 });
