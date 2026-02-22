@@ -14,6 +14,7 @@ import {
 } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { signInWithPasswordAndBootstrap } from "@/lib/auth/password-login";
 import { createClient } from "@/lib/supabase/client";
 import { sanitizeNextPath } from "@/lib/auth/validation";
 
@@ -38,20 +39,19 @@ export function LoginPasswordForm() {
     setError(null);
 
     const supabase = createClient();
-    const { error } = await supabase.auth.signInWithPassword({
-      email: email.trim(),
-      password,
-    });
+    try {
+      await signInWithPasswordAndBootstrap(supabase, {
+        email,
+        password,
+      });
 
-    if (error) {
-      setError(error.message);
+      // Flush Next.js RSC cache so server components read the new session.
+      router.refresh();
+      router.push(nextPath);
+    } catch (error) {
+      setError(error instanceof Error ? error.message : "An error occurred");
       setIsLoading(false);
-      return;
     }
-
-    // Flush Next.js RSC cache so server components read the new session.
-    router.refresh();
-    router.push(nextPath);
   };
 
   return (
