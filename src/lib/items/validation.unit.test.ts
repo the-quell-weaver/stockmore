@@ -14,7 +14,7 @@ describe("items validation", () => {
       unit: "  kg ",
       minStock: 1.5,
       note: "  dry storage ",
-      defaultTagId: "  ",
+      defaultTagIds: ["  "],
     });
 
     expect(result).toEqual({
@@ -22,7 +22,7 @@ describe("items validation", () => {
       unit: "kg",
       minStock: 1.5,
       note: "dry storage",
-      defaultTagId: null,
+      defaultTagIds: null,
     });
   });
 
@@ -45,9 +45,17 @@ describe("items validation", () => {
   });
 
   it("validates partial update patches", () => {
-    const patch = validateUpdateItemInput({ note: "  ", isDeleted: true });
+    const patch = validateUpdateItemInput({
+      note: "  ",
+      isDeleted: true,
+      defaultTagIds: null,
+    });
 
-    expect(patch).toEqual({ note: null, isDeleted: true });
+    expect(patch).toEqual({
+      note: null,
+      isDeleted: true,
+      defaultTagIds: null,
+    });
   });
 
   it("normalizes list query", () => {

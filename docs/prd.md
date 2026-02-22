@@ -140,13 +140,13 @@ C) **純本地工作（Local-first / On-device）— 後續功能**
 
 * UC-01：使用者登入並建立/取得預設倉庫
 
-  * Spec：docs/features/auth-and-onboarding.md
+  * Spec：docs/features/uc_01_auth_onboarding.md
 * UC-02：管理品項（Items）：新增/編輯（含最低庫存、單位、分類/標籤、備註）
 
-  * Spec：docs/features/items.md
+  * Spec：docs/features/uc_02_items.md
 * UC-03：管理存放點字典：新增/改名
 
-  * Spec：docs/features/storage-locations.md
+  * Spec：docs/features/uc_03_storage_locations.md
 * UC-04：管理標籤字典：新增/改名
 
   * Spec：docs/features/tags-and-categories.md

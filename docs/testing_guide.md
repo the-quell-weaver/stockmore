@@ -79,7 +79,7 @@ scripts/testing/run-e2e.sh
 - `E2E_PORT`：預設 `5566`。
 - `E2E_BASE_URL`：預設 `http://<host>:<port>`。
 - `E2E_READY_PATH`：預設 `/login`（避免首頁因 auth/SSR 卡住）。
-- `E2E_READY_ATTEMPTS`：預設 `10`。
+- `E2E_READY_ATTEMPTS`：預設 `30`。
 - `E2E_READY_TIMEOUT`：每次嘗試等待秒數，預設 `30`。
 
 範例：

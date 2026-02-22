@@ -17,6 +17,24 @@ function parseOptionalString(value: FormDataEntryValue | null): string | null {
   return normalized.length > 0 ? normalized : null;
 }
 
+function parseOptionalStringList(
+  formData: FormData,
+  key: string,
+  fallbackKey?: string,
+): string[] | null {
+  const entries = [...formData.getAll(key)];
+  if (fallbackKey) {
+    entries.push(...formData.getAll(fallbackKey));
+  }
+
+  const normalized = entries
+    .filter((entry): entry is string => typeof entry === "string")
+    .map((entry) => entry.trim())
+    .filter((entry) => entry.length > 0);
+
+  return normalized.length > 0 ? normalized : null;
+}
+
 function redirectWithState(params: Record<string, string>) {
   const query = new URLSearchParams(params);
   redirect(`/stock/items?${query.toString()}`);
@@ -31,7 +49,11 @@ export async function createItemAction(formData: FormData) {
       unit: String(formData.get("unit") ?? ""),
       minStock: parseNumber(formData.get("minStock")),
       note: parseOptionalString(formData.get("note")),
-      defaultTagId: parseOptionalString(formData.get("defaultTagId")),
+      defaultTagIds: parseOptionalStringList(
+        formData,
+        "defaultTagIds",
+        "defaultTagId",
+      ),
     });
   } catch (error) {
     if (error instanceof ItemError) {
@@ -58,7 +80,11 @@ export async function updateItemAction(formData: FormData) {
       unit: String(formData.get("unit") ?? ""),
       minStock: parseNumber(formData.get("minStock")),
       note: parseOptionalString(formData.get("note")),
-      defaultTagId: parseOptionalString(formData.get("defaultTagId")),
+      defaultTagIds: parseOptionalStringList(
+        formData,
+        "defaultTagIds",
+        "defaultTagId",
+      ),
       isDeleted: formData.get("isDeleted") === "on",
     });
   } catch (error) {
