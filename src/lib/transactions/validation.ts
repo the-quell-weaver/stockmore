@@ -21,7 +21,7 @@ export function validateCreateInboundBatchInput(
   input: CreateInboundBatchInput,
 ): CreateInboundBatchInput {
   return {
-    itemId: validateId(input.itemId, "itemId"),
+    itemId: validateId(input.itemId),
     quantity: validateQuantity(input.quantity),
     expiryDate: normalizeOptionalDate(input.expiryDate),
     storageLocationId: normalizeOptionalId(input.storageLocationId),
@@ -35,14 +35,14 @@ export function validateAddInboundToBatchInput(
   input: AddInboundToBatchInput,
 ): AddInboundToBatchInput {
   return {
-    batchId: validateId(input.batchId, "batchId"),
+    batchId: validateId(input.batchId),
     quantity: validateQuantity(input.quantity),
     note: normalizeOptionalText(input.note),
     idempotencyKey: normalizeOptionalText(input.idempotencyKey),
   };
 }
 
-function validateId(raw: string, _field: string): string {
+function validateId(raw: string): string {
   const value = raw?.trim() ?? "";
   if (!value) {
     throw new TransactionError(TRANSACTION_ERROR_CODES.FORBIDDEN);
