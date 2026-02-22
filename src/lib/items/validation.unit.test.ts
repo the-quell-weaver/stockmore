@@ -1,0 +1,60 @@
+import { describe, expect, it } from "vitest";
+
+import { ItemError, ITEM_ERROR_CODES } from "@/lib/items/errors";
+import {
+  normalizeListQuery,
+  validateCreateItemInput,
+  validateUpdateItemInput,
+} from "@/lib/items/validation";
+
+describe("items validation", () => {
+  it("trims and normalizes create input", () => {
+    const result = validateCreateItemInput({
+      name: "  Rice  ",
+      unit: "  kg ",
+      minStock: 1.5,
+      note: "  dry storage ",
+      defaultTagId: "  ",
+    });
+
+    expect(result).toEqual({
+      name: "Rice",
+      unit: "kg",
+      minStock: 1.5,
+      note: "dry storage",
+      defaultTagId: null,
+    });
+  });
+
+  it("rejects empty name", () => {
+    expect(() =>
+      validateCreateItemInput({ name: "   ", unit: "box", minStock: 0 }),
+    ).toThrowError(new ItemError(ITEM_ERROR_CODES.ITEM_NAME_REQUIRED));
+  });
+
+  it("rejects empty unit", () => {
+    expect(() =>
+      validateCreateItemInput({ name: "Water", unit: "   ", minStock: 0 }),
+    ).toThrowError(new ItemError(ITEM_ERROR_CODES.ITEM_UNIT_REQUIRED));
+  });
+
+  it("rejects negative min stock", () => {
+    expect(() =>
+      validateCreateItemInput({ name: "Water", unit: "L", minStock: -1 }),
+    ).toThrowError(new ItemError(ITEM_ERROR_CODES.ITEM_MIN_STOCK_INVALID));
+  });
+
+  it("validates partial update patches", () => {
+    const patch = validateUpdateItemInput({ note: "  ", isDeleted: true });
+
+    expect(patch).toEqual({ note: null, isDeleted: true });
+  });
+
+  it("normalizes list query", () => {
+    expect(normalizeListQuery({ q: "  rice  " })).toEqual({
+      q: "rice",
+      includeDeleted: false,
+    });
+    expect(normalizeListQuery()).toEqual({ q: undefined, includeDeleted: false });
+  });
+});

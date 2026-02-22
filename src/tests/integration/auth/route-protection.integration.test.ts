@@ -5,12 +5,12 @@ import { AUTH_ERROR_CODES } from "@/lib/auth/errors";
 import { updateSession } from "@/lib/supabase/proxy";
 import { requireUser } from "@/lib/auth/require-user";
 
-const getClaims = vi.fn();
+const getUser = vi.fn();
 
 vi.mock("@supabase/ssr", () => ({
   createServerClient: vi.fn(() => ({
     auth: {
-      getClaims,
+      getUser,
     },
   })),
 }));
@@ -27,12 +27,12 @@ vi.mock("next/navigation", () => ({
 
 describe("route protection", () => {
   beforeEach(() => {
-    getClaims.mockReset();
+    getUser.mockReset();
     redirectMock.mockReset();
   });
 
   it("redirects unauthenticated /stock request to /login with next", async () => {
-    getClaims.mockResolvedValue({ data: { claims: null } });
+    getUser.mockResolvedValue({ data: { user: null }, error: null });
 
     const request = new NextRequest("http://localhost/stock");
     const response = await updateSession(request);
@@ -44,7 +44,7 @@ describe("route protection", () => {
   });
 
   it("allows authenticated /stock request", async () => {
-    getClaims.mockResolvedValue({ data: { claims: { sub: "user-1" } } });
+    getUser.mockResolvedValue({ data: { user: { id: "user-1" } }, error: null });
 
     const request = new NextRequest("http://localhost/stock");
     const response = await updateSession(request);
@@ -55,7 +55,7 @@ describe("route protection", () => {
   it("requireUser redirects when no authenticated user exists", async () => {
     const supabase = {
       auth: {
-        getClaims: vi.fn().mockResolvedValue({ data: { claims: null }, error: null }),
+        getUser: vi.fn().mockResolvedValue({ data: { user: null }, error: null }),
       },
     };
 

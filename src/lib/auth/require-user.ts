@@ -7,13 +7,19 @@ export async function requireUser(
   supabase: SupabaseClient,
   nextPath: string,
 ) {
-  const { data, error } = await supabase.auth.getClaims();
+  let user: unknown = null;
+  try {
+    const { data, error } = await supabase.auth.getUser();
+    user = error ? null : data?.user ?? null;
+  } catch {
+    user = null;
+  }
 
-  if (error || !data?.claims) {
+  if (!user) {
     redirect(
       `/login?error=${AUTH_ERROR_CODES.AUTH_REQUIRED}&next=${encodeURIComponent(nextPath)}`,
     );
   }
 
-  return data.claims;
+  return user;
 }

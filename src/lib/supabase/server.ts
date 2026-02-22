@@ -1,5 +1,6 @@
 import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
+import { type NextRequest, NextResponse } from "next/server";
 
 /**
  * Especially important if using Fluid compute: Don't put this client in a
@@ -34,4 +35,43 @@ export async function createClient() {
       },
     },
   );
+}
+
+type CookieToSet = {
+  name: string;
+  value: string;
+  options?: Parameters<NextResponse["cookies"]["set"]>[2];
+};
+
+export function createRouteHandlerClient(request: NextRequest) {
+  const supabaseKey =
+    process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY ??
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+  const pendingCookies: CookieToSet[] = [];
+
+  const supabase = createServerClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    supabaseKey!,
+    {
+      cookies: {
+        getAll() {
+          return request.cookies.getAll();
+        },
+        setAll(cookiesToSet) {
+          cookiesToSet.forEach(({ name, value, options }) => {
+            pendingCookies.push({ name, value, options });
+          });
+        },
+      },
+    },
+  );
+
+  const finalizeResponse = (response: NextResponse) => {
+    pendingCookies.forEach(({ name, value, options }) => {
+      response.cookies.set(name, value, options);
+    });
+    return response;
+  };
+
+  return { supabase, finalizeResponse };
 }

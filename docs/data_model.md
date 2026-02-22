@@ -7,6 +7,7 @@
 
 - 本文件涵蓋的功能範圍（對應哪些 UC）
   - UC_01 Auth & Onboarding（org/warehouse/membership bootstrap）
+  - UC_02 Items（item master data + soft-delete）
 - 本文件不涵蓋的項目（例如 UI 文案、第三方整合細節）
 - 主要設計原則（multi-tenant、append-only transactions、可匯出/可搬遷）
 
@@ -35,6 +36,8 @@
   - `orgs`（RLS，FK: owner_user_id）
   - `org_memberships`（RLS，FK: org_id, user_id）
   - `warehouses`（RLS，FK: org_id）
+- UC_02
+  - `items`（RLS，FK: org_id, created_by, updated_by）
 
 ## 4. 各資料表規格（逐表）
 
@@ -154,6 +157,45 @@
 **Audit / History**
 - `created_at`, `created_by`
 
+### 4.4 `items`
+
+**Purpose**
+- 品項主檔（UC_02），供後續入庫/消耗/盤點引用。
+
+**Columns（表格）**
+- `id` | uuid | not null | gen_random_uuid() | PK | -
+- `org_id` | uuid | not null | - | FK to orgs | -
+- `name` | text | not null | - | 品項名稱 | Drinking Water
+- `unit` | text | not null | - | 顯示單位 | bottle
+- `min_stock` | numeric(12,3) | not null | 0 | 最低庫存門檻 | 3
+- `default_tag_id` | uuid | null | - | 單一預設標籤（UC_04 接續） | -
+- `note` | text | null | - | 備註 | keep dry
+- `is_deleted` | boolean | not null | false | soft-delete 標記 | false
+- `created_by` | uuid | not null | - | 建立者 | auth.users.id
+- `updated_by` | uuid | not null | - | 更新者 | auth.users.id
+- `created_at` | timestamptz | not null | now() | 建立時間 | -
+- `updated_at` | timestamptz | not null | now() | 更新時間 | -
+
+**Primary Key / Foreign Keys**
+- PK: `id`
+- FK: `org_id` → `orgs(id)` ON DELETE CASCADE
+- FK: `created_by` / `updated_by` → `auth.users(id)` ON DELETE RESTRICT
+
+**Constraints**
+- CHECK(`min_stock >= 0`)
+- UNIQUE partial index: `(org_id, lower(name)) where is_deleted = false`
+
+**Indexes**
+- `items_org_id_idx`
+- `items_org_name_search_idx`
+- `items_org_name_active_unique`
+
+**Row Ownership / Tenant Keys**
+- row belongs to `org_id`
+
+**Audit / History**
+- 允許直接更新（master data），刪除採 soft-delete（`is_deleted`）
+
 ## 5. 關鍵查詢與存取模式
 
 - 主要頁面/流程對 DB 的 read patterns（列表、篩選、聚合）
@@ -177,6 +219,7 @@
 - 資料遷移策略（rename/drop 的流程）
 - UC_01：`supabase/migrations/20260221000000_uc01_bootstrap.sql`
 - UC_01 PR#4：`supabase/migrations/20260222000000_uc01_rls_policies.sql` 補齊 `org_memberships` 的 update policy（owner 可更新本 org membership，維持多租戶隔離）。
+- UC_02：`supabase/migrations/20260223000000_uc02_items.sql` 新增 `items`、role check（owner/editor/viewer）、items RLS 與 soft-delete 支援。
 
 ## 9. Seed / Fixtures（測試資料）
 

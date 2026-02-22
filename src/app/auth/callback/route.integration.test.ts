@@ -11,11 +11,14 @@ const { bootstrapDefaultOrgAndWarehouse } = vi.hoisted(() => ({
 }));
 
 vi.mock("../../../lib/supabase/server", () => ({
-  createClient: vi.fn(async () => ({
-    auth: {
-      verifyOtp,
-      exchangeCodeForSession,
+  createRouteHandlerClient: vi.fn(() => ({
+    supabase: {
+      auth: {
+        verifyOtp,
+        exchangeCodeForSession,
+      },
     },
+    finalizeResponse: <T>(response: T) => response,
   })),
 }));
 
@@ -79,7 +82,7 @@ describe("/auth/callback", () => {
     );
   });
 
-  it("redirects to next on valid code exchange", async () => {
+  it("exchanges auth code on server and redirects to next path", async () => {
     exchangeCodeForSession.mockResolvedValue({ error: null });
     const request = new NextRequest(
       "http://localhost/auth/callback?code=abc123&next=/stock",
@@ -87,10 +90,31 @@ describe("/auth/callback", () => {
 
     const response = await GET(request);
 
+    expect(verifyOtp).not.toHaveBeenCalled();
     expect(exchangeCodeForSession).toHaveBeenCalledOnce();
+    expect(exchangeCodeForSession).toHaveBeenCalledWith("abc123");
     expect(bootstrapDefaultOrgAndWarehouse).toHaveBeenCalledOnce();
     expect(response.status).toBe(307);
     expect(response.headers.get("location")).toBe("http://localhost/stock");
+  });
+
+  it("redirects to login when code exchange fails", async () => {
+    exchangeCodeForSession.mockResolvedValue({
+      error: new Error("exchange failed"),
+    });
+    const request = new NextRequest(
+      "http://localhost/auth/callback?code=abc123&next=/stock",
+    );
+
+    const response = await GET(request);
+
+    expect(verifyOtp).not.toHaveBeenCalled();
+    expect(exchangeCodeForSession).toHaveBeenCalledOnce();
+    expect(bootstrapDefaultOrgAndWarehouse).not.toHaveBeenCalled();
+    expect(response.status).toBe(307);
+    expect(response.headers.get("location")).toBe(
+      `http://localhost/login?error=${AUTH_ERROR_CODES.AUTH_LINK_INVALID_OR_EXPIRED}&next=%2Fstock`,
+    );
   });
 
   it("accepts token param as token_hash fallback", async () => {

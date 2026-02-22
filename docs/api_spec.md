@@ -48,6 +48,9 @@
 | bootstrapDefaultOrgAndWarehouse | RPC | `bootstrap_default_org_and_warehouse()` | Authenticated | 建立/取得預設 org/warehouse | UC_01 |
 | stockPageGuard | Server page guard | `GET /stock` | Authenticated | 驗證 session 並回傳 stock 畫面 | UC_01 |
 | org/warehouse/membership RLS | DB Policy | `orgs`,`warehouses`,`org_memberships` | Authenticated | 阻擋跨租戶讀寫（AC3） | UC_01 |
+| createItem | Server Action | `createItemAction` | Authenticated (owner/editor) | 建立 item 主檔 | UC_02 |
+| updateItem | Server Action | `updateItemAction` | Authenticated (owner/editor) | 編輯 item 主檔（含 soft-delete） | UC_02 |
+| listItems | Server-side query | `listItems` | Authenticated (viewer+) | 以名稱關鍵字列出 items | UC_02 |
 
 ## 3. 介面規格（逐項）
 
@@ -100,6 +103,7 @@
 
 **Notes**
 - `next` 需經 sanitize，避免 open redirect
+- `code` flow 由 `/auth/callback` 在 server 端直接 `exchangeCodeForSession`，不經 client 交換頁，避免一次性 code 在前端重複消耗
 
 ### 3.3 `bootstrapDefaultOrgAndWarehouse`
 
@@ -147,6 +151,56 @@
 
 **Notes**
 - 先經 `src/proxy.ts` 的 middleware guard，再由 `requireUser()` 在 server component 再驗證一次。
+
+### 3.5 `createItemAction`
+
+**Type**
+- Server Action
+
+**Purpose**
+- 建立 item 主檔（名稱、單位、最低庫存、備註）
+
+**Auth**
+- authenticated owner/editor
+
+**Request**
+- FormData: `{ name, unit, minStock, defaultTagId?, note? }`
+- Validation: `name` 必填；`unit` 必填；`minStock >= 0`
+
+**Response**
+- Success: redirect `/stock/items?success=created`
+
+**Errors**
+- `ITEM_NAME_REQUIRED`
+- `ITEM_UNIT_REQUIRED`
+- `ITEM_MIN_STOCK_INVALID`
+- `ITEM_NAME_CONFLICT`
+- `FORBIDDEN`
+
+### 3.6 `updateItemAction`
+
+**Type**
+- Server Action
+
+**Purpose**
+- 更新 item 管理欄位，支援 soft-delete（`is_deleted`）
+
+**Auth**
+- authenticated owner/editor
+
+**Request**
+- FormData: `{ itemId, name?, unit?, minStock?, defaultTagId?, note?, isDeleted? }`
+
+**Response**
+- Success: redirect `/stock/items?success=updated`
+
+**Errors**
+- `ITEM_NOT_FOUND`
+- `ITEM_NAME_REQUIRED`
+- `ITEM_UNIT_REQUIRED`
+- `ITEM_MIN_STOCK_INVALID`
+- `ITEM_NAME_CONFLICT`
+- `FORBIDDEN`
 
 ### 3.x `<name>`
 

@@ -37,7 +37,6 @@ test('login page can request a magic link', async ({ page }) => {
   expect(capturedRedirectUrl).toContain('localhost:5566')
   expect(capturedRedirectUrl).toContain('/auth/callback')
   expect(capturedRedirectUrl).toContain('next=%2Fstock')
-  expect(capturedRedirectUrl).toContain('type=magiclink')
 
   await expect(
     page.getByText('Check your email for the magic link to sign in.'),

@@ -1,0 +1,73 @@
+"use server";
+
+import { revalidatePath } from "next/cache";
+import { redirect } from "next/navigation";
+
+import { ItemError } from "@/lib/items/errors";
+import { createItem, updateItem } from "@/lib/items/service";
+import { createClient } from "@/lib/supabase/server";
+
+function parseNumber(value: FormDataEntryValue | null): number {
+  return Number(typeof value === "string" ? value : "");
+}
+
+function parseOptionalString(value: FormDataEntryValue | null): string | null {
+  if (typeof value !== "string") return null;
+  const normalized = value.trim();
+  return normalized.length > 0 ? normalized : null;
+}
+
+function redirectWithState(params: Record<string, string>) {
+  const query = new URLSearchParams(params);
+  redirect(`/stock/items?${query.toString()}`);
+}
+
+export async function createItemAction(formData: FormData) {
+  const supabase = await createClient();
+
+  try {
+    await createItem(supabase, {
+      name: String(formData.get("name") ?? ""),
+      unit: String(formData.get("unit") ?? ""),
+      minStock: parseNumber(formData.get("minStock")),
+      note: parseOptionalString(formData.get("note")),
+      defaultTagId: parseOptionalString(formData.get("defaultTagId")),
+    });
+  } catch (error) {
+    if (error instanceof ItemError) {
+      redirectWithState({ error: error.code });
+    }
+    redirectWithState({ error: "FORBIDDEN" });
+  }
+
+  revalidatePath("/stock/items");
+  redirectWithState({ success: "created" });
+}
+
+export async function updateItemAction(formData: FormData) {
+  const itemId = String(formData.get("itemId") ?? "").trim();
+  if (!itemId) {
+    redirectWithState({ error: "ITEM_NOT_FOUND" });
+  }
+
+  const supabase = await createClient();
+
+  try {
+    await updateItem(supabase, itemId, {
+      name: String(formData.get("name") ?? ""),
+      unit: String(formData.get("unit") ?? ""),
+      minStock: parseNumber(formData.get("minStock")),
+      note: parseOptionalString(formData.get("note")),
+      defaultTagId: parseOptionalString(formData.get("defaultTagId")),
+      isDeleted: formData.get("isDeleted") === "on",
+    });
+  } catch (error) {
+    if (error instanceof ItemError) {
+      redirectWithState({ error: error.code });
+    }
+    redirectWithState({ error: "FORBIDDEN" });
+  }
+
+  revalidatePath("/stock/items");
+  redirectWithState({ success: "updated" });
+}

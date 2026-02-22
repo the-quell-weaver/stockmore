@@ -1,4 +1,5 @@
 import { Suspense } from "react";
+import Link from "next/link";
 
 import { getAuthContext } from "@/lib/auth/context";
 import { requireUser } from "@/lib/auth/require-user";
@@ -25,6 +26,14 @@ async function StockContent() {
               完成 onboarding 後會顯示預設倉庫。
             </p>
           )}
+        </div>
+        <div className="flex gap-3">
+          <Link
+            href="/stock/items"
+            className="inline-flex h-10 items-center rounded border px-4 text-sm"
+          >
+            管理 Items
+          </Link>
         </div>
       </div>
     </div>
