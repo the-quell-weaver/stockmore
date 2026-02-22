@@ -32,7 +32,7 @@
 | `RLS_FORBIDDEN` | Permission | 403 | No | 你沒有權限存取此資源 | DB write/read | 跨 org 存取由 RLS 拒絕 |
 | `ITEM_NAME_REQUIRED` | Validation | 400 | Yes | 品項名稱為必填 | Items create/update | 表單欄位驗證 |
 | `ITEM_UNIT_REQUIRED` | Validation | 400 | Yes | 單位為必填 | Items create/update | 表單欄位驗證 |
-| `ITEM_MIN_STOCK_INVALID` | Validation | 400 | Yes | 最低庫存不可為負值 | Items create/update | 邊界值驗證 |
+| `ITEM_MIN_STOCK_INVALID` | Validation | 400 | Yes | `min_stock` 必須為有限數且 >= 0 | Items create/update | 邊界值驗證 |
 | `ITEM_NAME_CONFLICT` | Domain | 409 | Yes | 品項名稱已存在 | Items create/update | `(org_id, lower(name))` unique |
 | `ITEM_NOT_FOUND` | Domain | 404 | No | 找不到品項 | Items update | id 不存在或不在授權範圍 |
 | `FORBIDDEN` | Permission | 403 | No | 你沒有此操作權限 | Items write | viewer / 非授權租戶 |
@@ -107,7 +107,7 @@
 
 ### 4.8 `ITEM_MIN_STOCK_INVALID`
 
-- **When**：`min_stock` 小於 0 或非數值
+- **When**：`min_stock` 非有限數值或小於 0
 - **Where**：`createItemAction`, `updateItemAction`
 - **HTTP status**：400
 - **Retryable**：可立即重試
