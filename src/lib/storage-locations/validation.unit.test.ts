@@ -29,6 +29,16 @@ describe("storage locations validation", () => {
     );
   });
 
+  it("rejects whitespace-only name on rename", () => {
+    expect(() => validateRenameLocationInput({ name: "   " })).toThrowError(
+      new LocationError(LOCATION_ERROR_CODES.LOCATION_NAME_REQUIRED),
+    );
+  });
+
+  it("trims rename name", () => {
+    expect(validateRenameLocationInput({ name: " 客廳 " })).toEqual({ name: "客廳" });
+  });
+
   it("accepts valid rename input", () => {
     expect(validateRenameLocationInput({ name: "客廳" })).toEqual({ name: "客廳" });
   });

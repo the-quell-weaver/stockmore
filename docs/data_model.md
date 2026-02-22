@@ -40,7 +40,7 @@
 - UC_02
   - `items`（RLS，FK: org_id, created_by, updated_by）
 - UC_03
-  - `storage_locations`（RLS，FK: org_id, warehouse_id, created_by）
+  - `storage_locations`（RLS，FK: org_id, warehouse_id, created_by, updated_by）
 
 ## 4. 各資料表規格（逐表）
 
@@ -210,6 +210,7 @@
 - `warehouse_id` | uuid | not null | - | FK to warehouses | -
 - `name` | text | not null | - | 存放點名稱 | 客廳櫃子
 - `created_by` | uuid | not null | - | 建立者 | auth.users.id
+- `updated_by` | uuid | not null | - | 最後更新者 | auth.users.id
 - `created_at` | timestamptz | not null | now() | 建立時間 | -
 - `updated_at` | timestamptz | not null | now() | 更新時間 | -
 
@@ -217,7 +218,7 @@
 - PK: `id`
 - FK: `org_id` → `orgs(id)` ON DELETE CASCADE
 - FK: `warehouse_id` → `warehouses(id)` ON DELETE CASCADE
-- FK: `created_by` → `auth.users(id)` ON DELETE RESTRICT
+- FK: `created_by` / `updated_by` → `auth.users(id)` ON DELETE RESTRICT
 
 **Constraints**
 - UNIQUE index: `(warehouse_id, lower(name))`（同倉庫名稱大小寫無感不可重複）
@@ -258,6 +259,7 @@
 - UC_01 PR#4：`supabase/migrations/20260222000000_uc01_rls_policies.sql` 補齊 `org_memberships` 的 update policy（owner 可更新本 org membership，維持多租戶隔離）。
 - UC_02：`supabase/migrations/20260223000000_uc02_items.sql` 新增 `items`、role check（owner/editor/viewer）、items RLS 與 soft-delete 支援。
 - UC_03：`supabase/migrations/20260224000000_uc03_storage_locations.sql` 新增 `storage_locations`、大小寫無感 unique index、`updated_at` trigger 與 RLS（owner/editor 可寫、member 可讀）。
+- UC_03 PR#1 review fix：`supabase/migrations/20260224010000_uc03_storage_locations_updated_by.sql` 補上 `updated_by` 欄位，並強化 insert/update policy（要求 `updated_by = auth.uid()`）。
 
 ## 9. Seed / Fixtures（測試資料）
 
