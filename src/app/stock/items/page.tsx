@@ -4,6 +4,7 @@ import { Suspense } from "react";
 import { createItemAction, updateItemAction } from "@/app/stock/items/actions";
 import { requireUser } from "@/lib/auth/require-user";
 import { listItems } from "@/lib/items/service";
+import { listTags } from "@/lib/tags/service";
 import { createClient } from "@/lib/supabase/server";
 
 type ItemsSearchParams = {
@@ -22,7 +23,10 @@ async function ItemsContent({
 
   const params = await searchParams;
   const q = params.q?.trim() ?? "";
-  const items = await listItems(supabase, { q });
+  const [items, tags] = await Promise.all([
+    listItems(supabase, { q }),
+    listTags(supabase),
+  ]);
 
   return (
     <div className="mx-auto flex w-full max-w-3xl flex-col gap-6 p-4 md:p-6" data-testid="items-page">
@@ -76,6 +80,15 @@ async function ItemsContent({
             備註
             <textarea name="note" className="min-h-20 rounded border px-3 py-2" />
           </label>
+          <label className="grid gap-1 text-sm">
+            預設標籤
+            <select name="defaultTagId" className="h-10 rounded border px-3 bg-background">
+              <option value="">（無）</option>
+              {tags.map((tag) => (
+                <option key={tag.id} value={tag.id}>{tag.name}</option>
+              ))}
+            </select>
+          </label>
           <button type="submit" className="h-11 rounded bg-primary px-4 text-sm text-primary-foreground">
             儲存品項
           </button>
@@ -101,50 +114,69 @@ async function ItemsContent({
           {items.length === 0 ? (
             <li className="rounded border border-dashed p-4 text-sm text-muted-foreground">沒有符合條件的品項。</li>
           ) : null}
-          {items.map((item) => (
-            <li key={item.id} className="rounded border p-4" data-testid={`item-row-${item.name}`}>
-              <form action={updateItemAction} className="grid gap-3">
-                <input type="hidden" name="itemId" value={item.id} />
-                <label className="grid gap-1 text-sm">
-                  品名
-                  <input name="name" required defaultValue={item.name} className="h-10 rounded border px-3" />
-                </label>
-                <div className="grid gap-3 md:grid-cols-2">
+          {items.map((item) => {
+            const tagName = tags.find((t) => t.id === item.defaultTagIds[0])?.name ?? null;
+            return (
+              <li key={item.id} className="rounded border p-4" data-testid={`item-row-${item.name}`}>
+                <div className="mb-3 flex items-center gap-2 text-sm text-muted-foreground">
+                  {tagName ? <span data-testid="item-tag-name">標籤：{tagName}</span> : null}
+                </div>
+                <form action={updateItemAction} className="grid gap-3">
+                  <input type="hidden" name="itemId" value={item.id} />
                   <label className="grid gap-1 text-sm">
-                    單位
-                    <input name="unit" required defaultValue={item.unit} className="h-10 rounded border px-3" />
+                    品名
+                    <input name="name" required defaultValue={item.name} className="h-10 rounded border px-3" />
                   </label>
+                  <div className="grid gap-3 md:grid-cols-2">
+                    <label className="grid gap-1 text-sm">
+                      單位
+                      <input name="unit" required defaultValue={item.unit} className="h-10 rounded border px-3" />
+                    </label>
+                    <label className="grid gap-1 text-sm">
+                      最低庫存
+                      <input
+                        name="minStock"
+                        type="number"
+                        min={0}
+                        step="0.001"
+                        required
+                        defaultValue={item.minStock}
+                        className="h-10 rounded border px-3"
+                      />
+                    </label>
+                  </div>
                   <label className="grid gap-1 text-sm">
-                    最低庫存
-                    <input
-                      name="minStock"
-                      type="number"
-                      min={0}
-                      step="0.001"
-                      required
-                      defaultValue={item.minStock}
-                      className="h-10 rounded border px-3"
+                    備註
+                    <textarea
+                      name="note"
+                      defaultValue={item.note ?? ""}
+                      className="min-h-20 rounded border px-3 py-2"
                     />
                   </label>
-                </div>
-                <label className="grid gap-1 text-sm">
-                  備註
-                  <textarea
-                    name="note"
-                    defaultValue={item.note ?? ""}
-                    className="min-h-20 rounded border px-3 py-2"
-                  />
-                </label>
-                <label className="flex items-center gap-2 text-sm">
-                  <input type="checkbox" name="isDeleted" defaultChecked={item.isDeleted} />
-                  封存（soft delete）
-                </label>
-                <button type="submit" className="h-10 rounded border px-4 text-sm">
-                  更新品項
-                </button>
-              </form>
-            </li>
-          ))}
+                  <label className="grid gap-1 text-sm">
+                    預設標籤
+                    <select
+                      name="defaultTagId"
+                      defaultValue={item.defaultTagIds[0] ?? ""}
+                      className="h-10 rounded border px-3 bg-background"
+                    >
+                      <option value="">（無）</option>
+                      {tags.map((tag) => (
+                        <option key={tag.id} value={tag.id}>{tag.name}</option>
+                      ))}
+                    </select>
+                  </label>
+                  <label className="flex items-center gap-2 text-sm">
+                    <input type="checkbox" name="isDeleted" defaultChecked={item.isDeleted} />
+                    封存（soft delete）
+                  </label>
+                  <button type="submit" className="h-10 rounded border px-4 text-sm">
+                    更新品項
+                  </button>
+                </form>
+              </li>
+            );
+          })}
         </ul>
       </section>
     </div>
