@@ -46,22 +46,20 @@ export async function updateSession(request: NextRequest) {
   );
 
   // Do not run code between createServerClient and
-  // supabase.auth.getClaims(). A simple mistake could make it very hard to debug
+  // supabase.auth.getUser(). A simple mistake could make it very hard to debug
   // issues with users being randomly logged out.
 
-  // IMPORTANT: If you remove getClaims() and you use server-side rendering
+  // IMPORTANT: If you remove getUser() and you use server-side rendering
   // with the Supabase client, your users may be randomly logged out.
-  let user: Record<string, unknown> | null = null;
+  let userId: string | null = null;
   try {
-    const { data, error } = await supabase.auth.getClaims();
-    user = error ? null : ((data?.claims as Record<string, unknown> | null) ?? null);
+    const { data, error } = await supabase.auth.getUser();
+    userId = error ? null : data?.user?.id ?? null;
   } catch {
-    // Best-effort cleanup for broken/expired refresh tokens.
-    await supabase.auth.signOut?.().catch(() => undefined);
-    user = null;
+    userId = null;
   }
 
-  if (!user && request.nextUrl.pathname.startsWith("/stock")) {
+  if (!userId && request.nextUrl.pathname.startsWith("/stock")) {
     const url = request.nextUrl.clone();
     url.pathname = "/login";
     url.searchParams.set("error", AUTH_ERROR_CODES.AUTH_REQUIRED);

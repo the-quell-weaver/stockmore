@@ -5,15 +5,20 @@ import { AUTH_ERROR_CODES } from "../../../lib/auth/errors";
 import { GET } from "./route";
 
 const verifyOtp = vi.fn();
+const exchangeCodeForSession = vi.fn();
 const { bootstrapDefaultOrgAndWarehouse } = vi.hoisted(() => ({
   bootstrapDefaultOrgAndWarehouse: vi.fn(),
 }));
 
 vi.mock("../../../lib/supabase/server", () => ({
-  createClient: vi.fn(async () => ({
-    auth: {
-      verifyOtp,
+  createRouteHandlerClient: vi.fn(() => ({
+    supabase: {
+      auth: {
+        verifyOtp,
+        exchangeCodeForSession,
+      },
     },
+    finalizeResponse: <T>(response: T) => response,
   })),
 }));
 
@@ -23,6 +28,7 @@ vi.mock("../../../lib/auth/bootstrap", () => ({
 
 beforeEach(() => {
   verifyOtp.mockReset();
+  exchangeCodeForSession.mockReset();
   bootstrapDefaultOrgAndWarehouse.mockReset();
   bootstrapDefaultOrgAndWarehouse.mockResolvedValue({
     orgId: "org-1",
@@ -76,7 +82,8 @@ describe("/auth/callback", () => {
     );
   });
 
-  it("redirects code flow to client-side exchange page", async () => {
+  it("exchanges auth code on server and redirects to next path", async () => {
+    exchangeCodeForSession.mockResolvedValue({ error: null });
     const request = new NextRequest(
       "http://localhost/auth/callback?code=abc123&next=/stock",
     );
@@ -84,10 +91,29 @@ describe("/auth/callback", () => {
     const response = await GET(request);
 
     expect(verifyOtp).not.toHaveBeenCalled();
+    expect(exchangeCodeForSession).toHaveBeenCalledOnce();
+    expect(exchangeCodeForSession).toHaveBeenCalledWith("abc123");
+    expect(bootstrapDefaultOrgAndWarehouse).toHaveBeenCalledOnce();
+    expect(response.status).toBe(307);
+    expect(response.headers.get("location")).toBe("http://localhost/stock");
+  });
+
+  it("redirects to login when code exchange fails", async () => {
+    exchangeCodeForSession.mockResolvedValue({
+      error: new Error("exchange failed"),
+    });
+    const request = new NextRequest(
+      "http://localhost/auth/callback?code=abc123&next=/stock",
+    );
+
+    const response = await GET(request);
+
+    expect(verifyOtp).not.toHaveBeenCalled();
+    expect(exchangeCodeForSession).toHaveBeenCalledOnce();
     expect(bootstrapDefaultOrgAndWarehouse).not.toHaveBeenCalled();
     expect(response.status).toBe(307);
     expect(response.headers.get("location")).toBe(
-      "http://localhost/auth/exchange?code=abc123&next=%2Fstock",
+      `http://localhost/login?error=${AUTH_ERROR_CODES.AUTH_LINK_INVALID_OR_EXPIRED}&next=%2Fstock`,
     );
   });
 

@@ -1,7 +1,7 @@
 import { type EmailOtpType } from "@supabase/supabase-js";
 import { type NextRequest, NextResponse } from "next/server";
 
-import { createClient } from "@/lib/supabase/server";
+import { createRouteHandlerClient } from "@/lib/supabase/server";
 import { AUTH_ERROR_CODES, type AuthErrorCode } from "@/lib/auth/errors";
 import { bootstrapDefaultOrgAndWarehouse } from "@/lib/auth/bootstrap";
 import { sanitizeNextPath } from "@/lib/auth/validation";
@@ -9,14 +9,19 @@ import { sanitizeNextPath } from "@/lib/auth/validation";
 const DEFAULT_NEXT_PATH = "/stock";
 
 function redirectToLogin(
+  finalizeResponse: (response: NextResponse) => NextResponse,
   requestUrl: URL,
   nextPath: string,
   errorCode: AuthErrorCode,
+  debug?: string,
 ) {
   const loginUrl = new URL("/login", requestUrl.origin);
   loginUrl.searchParams.set("error", errorCode);
   loginUrl.searchParams.set("next", nextPath);
-  return NextResponse.redirect(loginUrl);
+  if (debug && process.env.NODE_ENV === "development") {
+    loginUrl.searchParams.set("debug", debug);
+  }
+  return finalizeResponse(NextResponse.redirect(loginUrl));
 }
 
 export async function handleAuthCallback(request: NextRequest) {
@@ -32,11 +37,12 @@ export async function handleAuthCallback(request: NextRequest) {
     DEFAULT_NEXT_PATH,
   );
 
-  const supabase = await createClient();
+  const { supabase, finalizeResponse } = createRouteHandlerClient(request);
   let error: Error | null = null;
 
   if (process.env.NODE_ENV !== "production") {
     console.info("[auth/callback] incoming", {
+      host: requestUrl.host,
       hasCode: Boolean(code),
       hasTokenHash: Boolean(rawTokenHash),
       hasToken: Boolean(rawToken),
@@ -46,10 +52,10 @@ export async function handleAuthCallback(request: NextRequest) {
   }
   try {
     if (code) {
-      const exchangeUrl = new URL("/auth/exchange", requestUrl.origin);
-      exchangeUrl.searchParams.set("code", code);
-      exchangeUrl.searchParams.set("next", nextPath);
-      return NextResponse.redirect(exchangeUrl);
+      const { error: exchangeError } = await supabase.auth.exchangeCodeForSession(
+        code,
+      );
+      error = exchangeError;
     } else if (tokenHash && type) {
       error = await verifyMagicLinkToken(supabase, type, tokenHash, rawToken);
     } else {
@@ -60,15 +66,25 @@ export async function handleAuthCallback(request: NextRequest) {
   }
 
   if (error) {
+    const authErrorCode =
+      typeof error === "object" && error && "code" in error
+        ? String((error as { code?: unknown }).code ?? "")
+        : "";
     if (process.env.NODE_ENV !== "production") {
       console.warn("[auth/callback] auth exchange failed", {
+        code: authErrorCode || undefined,
         message: error.message,
+        hasCode: Boolean(code),
+        hasTokenHash: Boolean(rawTokenHash),
+        hasToken: Boolean(rawToken),
       });
     }
     return redirectToLogin(
+      finalizeResponse,
       requestUrl,
       nextPath,
       AUTH_ERROR_CODES.AUTH_LINK_INVALID_OR_EXPIRED,
+      authErrorCode || error.message,
     );
   }
 
@@ -76,6 +92,7 @@ export async function handleAuthCallback(request: NextRequest) {
     await bootstrapDefaultOrgAndWarehouse(supabase);
   } catch {
     return redirectToLogin(
+      finalizeResponse,
       requestUrl,
       nextPath,
       AUTH_ERROR_CODES.BOOTSTRAP_FAILED,
@@ -83,11 +100,11 @@ export async function handleAuthCallback(request: NextRequest) {
   }
 
   const redirectUrl = new URL(nextPath, requestUrl.origin);
-  return NextResponse.redirect(redirectUrl);
+  return finalizeResponse(NextResponse.redirect(redirectUrl));
 }
 
 async function verifyMagicLinkToken(
-  supabase: Awaited<ReturnType<typeof createClient>>,
+  supabase: ReturnType<typeof createRouteHandlerClient>["supabase"],
   type: EmailOtpType,
   tokenHash: string,
   rawToken: string | null,
