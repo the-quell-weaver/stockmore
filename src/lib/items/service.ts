@@ -34,7 +34,7 @@ export type Item = {
   name: string;
   unit: string;
   minStock: number;
-  defaultTagId: string | null;
+  defaultTagIds: string[];
   note: string | null;
   isDeleted: boolean;
   createdAt: string;
@@ -83,7 +83,7 @@ export async function createItem(
       name: validated.name,
       unit: validated.unit,
       min_stock: validated.minStock,
-      default_tag_id: validated.defaultTagId ?? null,
+      default_tag_id: validated.defaultTagIds?.[0] ?? null,
       note: validated.note ?? null,
       created_by: userId,
       updated_by: userId,
@@ -111,8 +111,8 @@ export async function updateItem(
   if (validated.name !== undefined) payload.name = validated.name;
   if (validated.unit !== undefined) payload.unit = validated.unit;
   if (validated.minStock !== undefined) payload.min_stock = validated.minStock;
-  if (validated.defaultTagId !== undefined) {
-    payload.default_tag_id = validated.defaultTagId;
+  if (validated.defaultTagIds !== undefined) {
+    payload.default_tag_id = validated.defaultTagIds?.[0] ?? null;
   }
   if (validated.note !== undefined) payload.note = validated.note;
   if (validated.isDeleted !== undefined) payload.is_deleted = validated.isDeleted;
@@ -184,7 +184,7 @@ function mapItemRow(row: ItemRow): Item {
     name: row.name,
     unit: row.unit,
     minStock: Number(row.min_stock),
-    defaultTagId: row.default_tag_id,
+    defaultTagIds: row.default_tag_id ? [row.default_tag_id] : [],
     note: row.note,
     isDeleted: row.is_deleted,
     createdAt: row.created_at,

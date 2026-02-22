@@ -4,7 +4,7 @@ export type CreateItemInput = {
   name: string;
   unit: string;
   minStock: number;
-  defaultTagId?: string | null;
+  defaultTagIds?: string[] | null;
   note?: string | null;
 };
 
@@ -12,7 +12,7 @@ export type UpdateItemInput = {
   name?: string;
   unit?: string;
   minStock?: number;
-  defaultTagId?: string | null;
+  defaultTagIds?: string[] | null;
   note?: string | null;
   isDeleted?: boolean;
 };
@@ -27,7 +27,7 @@ export function validateCreateItemInput(input: CreateItemInput): CreateItemInput
     name: validateName(input.name),
     unit: validateUnit(input.unit),
     minStock: validateMinStock(input.minStock),
-    defaultTagId: normalizeOptionalId(input.defaultTagId),
+    defaultTagIds: normalizeOptionalIds(input.defaultTagIds),
     note: normalizeOptionalText(input.note),
   };
 }
@@ -44,8 +44,8 @@ export function validateUpdateItemInput(input: UpdateItemInput): UpdateItemInput
   if (input.minStock !== undefined) {
     patch.minStock = validateMinStock(input.minStock);
   }
-  if (input.defaultTagId !== undefined) {
-    patch.defaultTagId = normalizeOptionalId(input.defaultTagId);
+  if (input.defaultTagIds !== undefined) {
+    patch.defaultTagIds = normalizeOptionalIds(input.defaultTagIds);
   }
   if (input.note !== undefined) {
     patch.note = normalizeOptionalText(input.note);
@@ -94,8 +94,10 @@ function normalizeOptionalText(raw?: string | null): string | null {
   return value.length > 0 ? value : null;
 }
 
-function normalizeOptionalId(raw?: string | null): string | null {
+function normalizeOptionalIds(raw?: string[] | null): string[] | null {
   if (raw == null) return null;
-  const value = raw.trim();
-  return value.length > 0 ? value : null;
+  const normalized = raw
+    .map((value) => value.trim())
+    .filter((value) => value.length > 0);
+  return normalized.length > 0 ? normalized : null;
 }
