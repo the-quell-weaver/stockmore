@@ -8,10 +8,6 @@ import {
   createStorageLocation,
   renameStorageLocation,
 } from "@/lib/storage-locations/service";
-import {
-  validateCreateLocationInput,
-  validateRenameLocationInput,
-} from "@/lib/storage-locations/validation";
 import { createClient } from "@/lib/supabase/server";
 
 function redirectWithState(params: Record<string, string>) {
@@ -23,10 +19,9 @@ export async function createLocationAction(formData: FormData) {
   const supabase = await createClient();
 
   try {
-    const input = validateCreateLocationInput({
+    await createStorageLocation(supabase, {
       name: String(formData.get("name") ?? ""),
     });
-    await createStorageLocation(supabase, input);
   } catch (error) {
     if (error instanceof LocationError) {
       redirectWithState({ error: error.code });
@@ -47,10 +42,9 @@ export async function renameLocationAction(formData: FormData) {
   const supabase = await createClient();
 
   try {
-    const input = validateRenameLocationInput({
+    await renameStorageLocation(supabase, locationId, {
       name: String(formData.get("name") ?? ""),
     });
-    await renameStorageLocation(supabase, locationId, input);
   } catch (error) {
     if (error instanceof LocationError) {
       redirectWithState({ error: error.code });

@@ -103,9 +103,6 @@ export async function renameStorageLocation(
     .maybeSingle();
 
   if (error) {
-    if (error.code === "PGRST116") {
-      throw new LocationError(LOCATION_ERROR_CODES.LOCATION_NOT_FOUND);
-    }
     throw mapLocationDbError(error);
   }
 
