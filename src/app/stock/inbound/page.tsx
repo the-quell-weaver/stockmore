@@ -47,7 +47,7 @@ async function InboundContent({
 
   const selectedItem = items.find((i) => i.id === selectedItemId) ?? null;
   const batches =
-    selectedItemId && mode === "existing"
+    selectedItem !== null && mode === "existing"
       ? await listBatchesForItem(supabase, selectedItemId)
       : [];
 
