@@ -27,12 +27,18 @@ async function StockContent() {
             </p>
           )}
         </div>
-        <div className="flex gap-3">
+        <div className="flex flex-wrap gap-3">
           <Link
             href="/stock/items"
             className="inline-flex h-10 items-center rounded border px-4 text-sm"
           >
             管理 Items
+          </Link>
+          <Link
+            href="/stock/locations"
+            className="inline-flex h-10 items-center rounded border px-4 text-sm"
+          >
+            存放點
           </Link>
         </div>
       </div>

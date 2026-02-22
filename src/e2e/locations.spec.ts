@@ -7,7 +7,9 @@ test("authenticated user can create and rename storage location", async ({ page 
   const locationName = `客廳-${suffix}`;
   const renamedLocationName = `客廳抽屜-${suffix}`;
 
-  await page.goto("/stock/locations");
+  await page.goto("/stock");
+  await page.getByRole("link", { name: "存放點" }).click();
+  await expect(page).toHaveURL(/\/stock\/locations/);
 
   const createForm = page.getByTestId("create-location-form");
   await createForm.getByLabel("名稱").fill(locationName);
