@@ -141,11 +141,16 @@ export function LoginForm({
                 {isLoading ? "Sending..." : "Send magic link"}
               </Button>
             </div>
-            <div className="mt-4 text-center text-sm">
-              Don&apos;t have an account?{" "}
-              <Link href="/auth/sign-up" className="underline underline-offset-4">
-                Sign up
+            <div className="mt-4 flex flex-col gap-2 text-center text-sm">
+              <Link href="/auth/login" className="underline underline-offset-4">
+                Sign in with password instead
               </Link>
+              <span>
+                Don&apos;t have an account?{" "}
+                <Link href="/auth/sign-up" className="underline underline-offset-4">
+                  Sign up
+                </Link>
+              </span>
             </div>
           </form>
         </CardContent>
