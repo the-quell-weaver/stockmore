@@ -49,6 +49,8 @@ export function LoginPasswordForm() {
       return;
     }
 
+    // Flush Next.js RSC cache so server components read the new session.
+    router.refresh();
     router.push(nextPath);
   };
 

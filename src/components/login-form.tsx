@@ -142,7 +142,10 @@ export function LoginForm({
               </Button>
             </div>
             <div className="mt-4 flex flex-col gap-2 text-center text-sm">
-              <Link href="/auth/login" className="underline underline-offset-4">
+              <Link
+                href={`/auth/login${nextPath !== DEFAULT_NEXT_PATH ? `?next=${encodeURIComponent(nextPath)}` : ""}`}
+                className="underline underline-offset-4"
+              >
                 Sign in with password instead
               </Link>
               <span>
