@@ -197,6 +197,7 @@ C) **純本地工作（Local-first / On-device）— 後續功能**
 ## 8. 後續功能（Backlog — 保留細節，不過度化簡）
 
 > 本節描述「在完成 MVP 的狀態上」後續功能應該長成什麼樣子（保留原本細節）。
+> 低優先、暫時結案類工作請見：`docs/future_works/README.md`。
 
 ### 8.1 多倉庫（Multi-warehouse）— 後續功能
 
