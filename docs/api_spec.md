@@ -103,6 +103,7 @@
 
 **Notes**
 - `next` 需經 sanitize，避免 open redirect
+- `code` flow 由 `/auth/callback` 在 server 端直接 `exchangeCodeForSession`，不經 client 交換頁，避免一次性 code 在前端重複消耗
 
 ### 3.3 `bootstrapDefaultOrgAndWarehouse`
 

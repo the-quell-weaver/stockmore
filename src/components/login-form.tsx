@@ -41,6 +41,7 @@ export function LoginForm({
     DEFAULT_NEXT_PATH,
   );
   const paramError = parseAuthErrorCode(searchParams.get("error"));
+  const debug = searchParams.get("debug");
   const paramErrorMessage = paramError
     ? getAuthErrorMessage(paramError)
     : null;
@@ -69,8 +70,7 @@ export function LoginForm({
         await supabase.auth.signOut({ scope: "local" }).catch(() => undefined);
       }
 
-      const normalizedOrigin = normalizeLoopbackOrigin(window.location);
-      const redirectUrl = new URL("/auth/callback", normalizedOrigin);
+      const redirectUrl = new URL("/auth/callback", window.location.origin);
       redirectUrl.searchParams.set("next", nextPath);
 
       // Keep redirect URL construction in one place for testing and audits.
@@ -125,7 +125,12 @@ export function LoginForm({
                 />
               </div>
               {effectiveError && (
-                <p className="text-sm text-red-500">{effectiveError}</p>
+                <p className="text-sm text-red-500">
+                  {effectiveError}
+                  {process.env.NODE_ENV === "development" && debug
+                    ? ` (debug: ${debug})`
+                    : ""}
+                </p>
               )}
               {success && (
                 <p className="text-sm text-emerald-600">
@@ -147,14 +152,6 @@ export function LoginForm({
       </Card>
     </div>
   );
-}
-
-function normalizeLoopbackOrigin(location: Location): string {
-  const hostname = location.hostname;
-  if (hostname === "127.0.0.1" || hostname === "[::1]" || hostname === "::1") {
-    return location.origin.replace(hostname, "localhost");
-  }
-  return location.origin;
 }
 
 function isRefreshTokenNotFoundError(error: unknown): boolean {

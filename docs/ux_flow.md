@@ -129,7 +129,7 @@
 
 ### 5.2 `/auth/callback` — Auth callback
 
-- **Purpose**：驗證 magic link token，執行 bootstrap 後導向 `/stock`
+- **Purpose**：在 server 端完成 magic link code/token 驗證與 session 建立，執行 bootstrap 後導向 `/stock`
 - **Auth**：不需要登入
 - **Primary CTA**：無（系統導向）
 - **Error states**：`AUTH_LINK_INVALID_OR_EXPIRED`, `BOOTSTRAP_FAILED`
