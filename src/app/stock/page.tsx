@@ -29,6 +29,13 @@ async function StockContent() {
         </div>
         <div className="flex flex-wrap gap-3">
           <Link
+            href="/stock/inbound"
+            className="inline-flex h-10 items-center rounded bg-primary px-4 text-sm text-primary-foreground"
+            data-testid="nav-inbound"
+          >
+            入庫
+          </Link>
+          <Link
             href="/stock/items"
             className="inline-flex h-10 items-center rounded border px-4 text-sm"
           >
