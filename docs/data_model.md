@@ -41,6 +41,11 @@
   - `items`（RLS，FK: org_id, created_by, updated_by）
 - UC_03
   - `storage_locations`（RLS，FK: org_id, warehouse_id, created_by, updated_by）
+- UC_04
+  - `tags`（RLS，FK: org_id, warehouse_id, created_by, updated_by）
+- UC_05
+  - `batches`（RLS SELECT only，FK: org_id, warehouse_id, item_id, storage_location_id, tag_id, created_by；寫入僅透過 RPC）
+  - `transactions`（RLS SELECT only，FK: org_id, warehouse_id, batch_id, item_id, created_by；append-only，寫入僅透過 RPC）
 
 ## 4. 各資料表規格（逐表）
 
@@ -260,6 +265,7 @@
 - UC_02：`supabase/migrations/20260223000000_uc02_items.sql` 新增 `items`、role check（owner/editor/viewer）、items RLS 與 soft-delete 支援。
 - UC_03：`supabase/migrations/20260224000000_uc03_storage_locations.sql` 新增 `storage_locations`、大小寫無感 unique index、`updated_at` trigger 與 RLS（owner/editor 可寫、member 可讀）。
 - UC_03 PR#1 review fix：`supabase/migrations/20260224010000_uc03_storage_locations_updated_by.sql` 補上 `updated_by` 欄位，並強化 insert/update policy（要求 `updated_by = auth.uid()`）。
+- UC_05：`supabase/migrations/20260226000000_uc05_batches_transactions.sql` 新增 `batches`、`transactions`，RLS SELECT only（寫入僅透過 RPC）；建立 `create_inbound_batch`、`add_inbound_to_batch` security definer RPC（含原子性寫入與 idempotency 保護）。
 
 ## 9. Seed / Fixtures（測試資料）
 
