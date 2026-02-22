@@ -318,6 +318,72 @@ describe("tags service integration (UC_04)", () => {
     }
   });
 
+  it("rejects tag insert where warehouse_id belongs to a different org (P1)", async () => {
+    const userA = await createTestUser();
+    const userB = await createTestUser();
+    try {
+      const clientA = await signIn(userA.email, userA.password);
+      const clientB = await signIn(userB.email, userB.password);
+      const orgA = await bootstrap(clientA);
+      const orgB = await bootstrap(clientB);
+
+      // User A is a legitimate owner of org A but supplies org B's warehouse_id.
+      // The new policy must reject this even though the org_id membership check passes.
+      const res = await clientA.from("tags").insert({
+        org_id: orgA.org_id,
+        warehouse_id: orgB.warehouse_id,
+        name: `CrossWarehouse-${randomUUID().slice(0, 8)}`,
+        created_by: userA.userId,
+        updated_by: userA.userId,
+      });
+      expect(res.error?.code).toBe("42501");
+    } finally {
+      await cleanupTestUser(userA.userId);
+      await cleanupTestUser(userB.userId);
+    }
+  });
+
+  it("rejects item insert with default_tag_id from a different org (P2)", async () => {
+    const userA = await createTestUser();
+    const userB = await createTestUser();
+    try {
+      const clientA = await signIn(userA.email, userA.password);
+      const clientB = await signIn(userB.email, userB.password);
+      const orgA = await bootstrap(clientA);
+      const orgB = await bootstrap(clientB);
+
+      // Seed a tag in org B via admin client.
+      const tagB = await adminClient
+        .from("tags")
+        .insert({
+          org_id: orgB.org_id,
+          warehouse_id: orgB.warehouse_id,
+          name: `OrgB-Tag-${randomUUID().slice(0, 8)}`,
+          created_by: userB.userId,
+          updated_by: userB.userId,
+        })
+        .select("id")
+        .single();
+      expect(tagB.error).toBeNull();
+
+      // Attempt to insert an item in org A that references org B's tag.
+      // The trigger must fire and reject this with a foreign_key_violation (23503).
+      const res = await adminClient.from("items").insert({
+        org_id: orgA.org_id,
+        name: `CrossTagItem-${randomUUID().slice(0, 8)}`,
+        unit: "個",
+        min_stock: 0,
+        default_tag_id: tagB.data!.id,
+        created_by: userA.userId,
+        updated_by: userA.userId,
+      });
+      expect(res.error?.code).toBe("23503");
+    } finally {
+      await cleanupTestUser(userA.userId);
+      await cleanupTestUser(userB.userId);
+    }
+  });
+
   it("enforces cross-org isolation on list and insert", async () => {
     const userA = await createTestUser();
     const userB = await createTestUser();
