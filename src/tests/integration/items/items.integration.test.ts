@@ -210,4 +210,37 @@ describe("items service integration (UC_02)", () => {
       await adminClient.auth.admin.deleteUser(userB.userId);
     }
   });
+
+  it("rejects duplicate item name in same org (ITEM_NAME_CONFLICT)", async () => {
+    const user = await createTestUser();
+    try {
+      const client = await signIn(user.email, user.password);
+      await bootstrap(client);
+      const suffix = randomUUID().slice(0, 8);
+      const name = `Dup-${suffix}`;
+
+      await createItem(asServiceClient(client), { name, unit: "pcs", minStock: 0 });
+
+      await expect(
+        createItem(asServiceClient(client), { name, unit: "box", minStock: 0 }),
+      ).rejects.toMatchObject({ code: ITEM_ERROR_CODES.ITEM_NAME_CONFLICT });
+    } finally {
+      await adminClient.auth.admin.deleteUser(user.userId);
+    }
+  });
+
+  it("returns ITEM_NOT_FOUND when updating non-existent item", async () => {
+    const user = await createTestUser();
+    try {
+      const client = await signIn(user.email, user.password);
+      await bootstrap(client);
+      const nonExistentId = randomUUID();
+
+      await expect(
+        updateItem(asServiceClient(client), nonExistentId, { note: "ghost" }),
+      ).rejects.toMatchObject({ code: ITEM_ERROR_CODES.ITEM_NOT_FOUND });
+    } finally {
+      await adminClient.auth.admin.deleteUser(user.userId);
+    }
+  });
 });
