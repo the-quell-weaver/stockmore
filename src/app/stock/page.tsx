@@ -40,6 +40,12 @@ async function StockContent() {
           >
             存放點
           </Link>
+          <Link
+            href="/stock/tags"
+            className="inline-flex h-10 items-center rounded border px-4 text-sm"
+          >
+            標籤
+          </Link>
         </div>
       </div>
     </div>
