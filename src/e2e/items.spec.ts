@@ -15,7 +15,7 @@ test("authenticated user can create, search, and update item", async ({ page }) 
   await createForm.getByLabel("最低庫存").fill("2");
   await createForm.getByRole("button", { name: "儲存品項" }).click();
 
-  await expect(page.getByTestId("items-success")).toContainText("created");
+  await expect(page).toHaveURL(/\/stock\/items\?success=created/, { timeout: 15_000 });
 
   await page.getByTestId("items-search-input").fill(itemName);
   await page.getByRole("button", { name: "搜尋" }).click();
@@ -25,6 +25,6 @@ test("authenticated user can create, search, and update item", async ({ page }) 
   await row.getByLabel("備註").fill(updatedNote);
   await row.getByRole("button", { name: "更新品項" }).click();
 
-  await expect(page.getByTestId("items-success")).toContainText("updated");
+  await expect(page).toHaveURL(/\/stock\/items\?success=updated/, { timeout: 15_000 });
   await expect(page.getByTestId(`item-row-${itemName}`).getByLabel("備註")).toHaveValue(updatedNote);
 });
