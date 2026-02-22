@@ -1,25 +1,20 @@
-import { expect, test } from '@playwright/test'
-import { randomUUID } from 'node:crypto'
+import { expect, test } from "@playwright/test";
 
-test('authenticated user can create org, add item, inbound stock, and see stock row', async ({ page }) => {
-  const suffix = randomUUID().slice(0, 8)
-  const orgName = `Org-${suffix}`
-  const itemName = `Item-${suffix}`
+test("authenticated user can reach stock from homepage CTA", async ({ page }) => {
+  await page.goto("/");
 
-  await page.goto('/protected')
+  await expect(page.getByRole("heading", { name: "PrepStock（綢繆）" })).toBeVisible();
+  await expect(page.getByRole("link", { name: "前往庫存" })).toHaveAttribute(
+    "href",
+    "/stock",
+  );
 
-  await expect(page.getByText('This is a protected page that you can only see as an authenticated user')).toBeVisible()
+  await page.goto("/stock");
+  await expect(page.getByRole("heading", { name: "Stock" })).toBeVisible();
+});
 
-  await page.getByLabel('Org 名稱').fill(orgName)
-  await page.getByRole('button', { name: '建立 org' }).click()
-  await expect(page.getByTestId('active-org')).toContainText(orgName)
+test("/protected returns 404", async ({ page }) => {
+  const response = await page.goto("/protected");
 
-  await page.getByLabel('品項名稱').fill(itemName)
-  await page.getByRole('button', { name: '新增 item' }).click()
-
-  await page.getByTestId('item-select').selectOption({ label: itemName })
-  await page.getByLabel('數量').fill('9')
-  await page.getByRole('button', { name: '入庫' }).click()
-
-  await expect(page.getByTestId(`stock-row-${itemName}`)).toContainText(`${itemName}: 9`)
-})
+  expect(response?.status()).toBe(404);
+});

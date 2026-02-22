@@ -1,8 +1,8 @@
 <!-- Generated from template.md for UC-02 -->
 
 # Feature: Items（品項主檔管理：新增/編輯）
-- **Doc**: docs/features/items.md
-- **Status**: Draft
+- **Doc**: docs/features/uc_02_items.md
+- **Status**: Implemented
 - **PRD linkage**: UC-02（管理品項：新增/編輯，含最低庫存、單位、標籤、備註）
 - **Last updated**: 2026-02-19
 
@@ -69,7 +69,7 @@
 - New tables (if any): `item_tags`（若採多標籤）或 `items.default_tag_id`（若採單標籤；建議多標籤但 MVP 可先單一）
 
 ### 6.2 Constraints & invariants
-- `items.name`：在同 org 範圍內建議 unique（是否允許同名？MVP 建議 unique 以降低歧義）。
+- `items.name`：在同 org 範圍內強制 unique（case-insensitive）。實作採部分唯一索引 `(org_id, lower(name)) WHERE is_deleted = false`，已封存品項不計入唯一性約束。
 - `items.min_stock >= 0`。
 - referential integrity：item_tags.tag_id → tags.id。
 
@@ -91,7 +91,7 @@
   - Response: `{ item }`
   - AuthZ: owner/editor
   - Validation: name 非空；unit 非空；minStock >= 0
-  - Failure: `ITEM_NAME_REQUIRED`, `ITEM_UNIT_REQUIRED`, `ITEM_NAME_CONFLICT`, `FORBIDDEN`
+  - Failure: `ITEM_NAME_REQUIRED`, `ITEM_UNIT_REQUIRED`, `ITEM_MIN_STOCK_INVALID`, `ITEM_NAME_CONFLICT`, `FORBIDDEN`
 
 - `action updateItem(itemId, patch)`
   - Request: `{ name?, unit?, minStock?, defaultTagIds?, note? }`
@@ -121,6 +121,7 @@
 ## 11. Telemetry / Auditability
 - 記錄：items.created_at/by、updated_at/by（若有）。
 - 查詢：搜尋 items by name；列出低庫存門檻（給 UC-09 job）。
+- MVP 的 API response（`Item` type）暫不回傳 `created_by` / `updated_by` 欄位；這兩個欄位僅存於 DB，供未來 audit UI 使用。
 
 ## 12. Acceptance Criteria
 - AC1: Given owner/editor When 新增品項並填寫必填欄位 Then 看到品項出現在列表且可被入庫流程選用。

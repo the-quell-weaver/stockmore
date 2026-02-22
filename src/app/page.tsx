@@ -1,55 +1,40 @@
-import { DeployButton } from "@/components/deploy-button";
-import { EnvVarWarning } from "@/components/env-var-warning";
-import { AuthButton } from "@/components/auth-button";
-import { Hero } from "@/components/hero";
-import { ThemeSwitcher } from "@/components/theme-switcher";
-import { ConnectSupabaseSteps } from "@/components/tutorial/connect-supabase-steps";
-import { SignUpUserSteps } from "@/components/tutorial/sign-up-user-steps";
-import { hasEnvVars } from "@/lib/utils";
 import Link from "next/link";
 import { Suspense } from "react";
 
+import { AuthButton } from "@/components/auth-button";
+import { ThemeSwitcher } from "@/components/theme-switcher";
+import { Button } from "@/components/ui/button";
+
 export default function Home() {
   return (
-    <main className="min-h-screen flex flex-col items-center">
-      <div className="flex-1 w-full flex flex-col gap-20 items-center">
-        <nav className="w-full flex justify-center border-b border-b-foreground/10 h-16">
-          <div className="w-full max-w-5xl flex justify-between items-center p-3 px-5 text-sm">
-            <div className="flex gap-5 items-center font-semibold">
-              <Link href={"/"}>Next.js Supabase Starter</Link>
-              <div className="flex items-center gap-2">
-                <DeployButton />
-              </div>
-            </div>
-            {!hasEnvVars ? (
-              <EnvVarWarning />
-            ) : (
-              <Suspense>
-                <AuthButton />
-              </Suspense>
-            )}
-          </div>
+    <main className="min-h-svh w-full">
+      <div className="mx-auto flex min-h-svh w-full max-w-5xl flex-col px-4 py-6 md:px-6 md:py-8">
+        <nav className="mb-12 flex items-center justify-between border-b pb-4 text-sm">
+          <Link href="/" className="font-semibold">
+            PrepStock（綢繆）
+          </Link>
+          <Suspense>
+            <AuthButton />
+          </Suspense>
         </nav>
-        <div className="flex-1 flex flex-col gap-20 max-w-5xl p-5">
-          <Hero />
-          <main className="flex-1 flex flex-col gap-6 px-4">
-            <h2 className="font-medium text-xl mb-4">Next steps</h2>
-            {hasEnvVars ? <SignUpUserSteps /> : <ConnectSupabaseSteps />}
-          </main>
-        </div>
 
-        <footer className="w-full flex items-center justify-center border-t mx-auto text-center text-xs gap-8 py-16">
-          <p>
-            Powered by{" "}
-            <a
-              href="https://supabase.com/?utm_source=create-next-app&utm_medium=template&utm_term=nextjs"
-              target="_blank"
-              className="font-bold hover:underline"
-              rel="noreferrer"
-            >
-              Supabase
-            </a>
-          </p>
+        <section className="flex flex-1 flex-col items-start justify-center gap-6">
+          <div className="space-y-3">
+            <h1 className="text-3xl font-semibold tracking-tight md:text-4xl">
+              PrepStock（綢繆）
+            </h1>
+            <p className="text-lg text-muted-foreground">防災物資庫存管理</p>
+            <p className="text-sm text-muted-foreground md:text-base">
+              管理您的防災物資，隨時掌握庫存狀況。
+            </p>
+          </div>
+
+          <Button asChild>
+            <Link href="/stock">前往庫存</Link>
+          </Button>
+        </section>
+
+        <footer className="mt-12 flex justify-end border-t pt-4">
           <ThemeSwitcher />
         </footer>
       </div>

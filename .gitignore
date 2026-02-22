@@ -1,3 +1,6 @@
 # Root-level ignores
 supabase/.branches/
 supabase/.temp/
+
+# Claude Code local settings (user-specific)
+.claude/settings.local.json
