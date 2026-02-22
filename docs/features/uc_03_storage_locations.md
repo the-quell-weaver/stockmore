@@ -1,10 +1,10 @@
 <!-- Generated from template.md for UC-03 -->
 
 # Feature: Storage Locations（存放點字典：新增/改名）
-- **Doc**: docs/features/storage-locations.md
-- **Status**: Draft
+- **Doc**: docs/features/uc_03_storage_locations.md
+- **Status**: Implemented
 - **PRD linkage**: UC-03（管理存放點字典：新增/改名）
-- **Last updated**: 2026-02-19
+- **Last updated**: 2026-02-22
 
 ## 0. Summary
 本功能提供「倉庫層級」的存放點字典（Storage Locations），讓使用者能建立一份可重用的存放點清單，並在入庫時選擇物資實際存放位置。MVP 支援新增與改名，改名需反映到既有庫存顯示（以 location_id 關聯而非字串複製）。MVP 不提供作廢/禁用流程，但資料模型需預留未來「作廢且不可刪除」的擴充。
@@ -128,7 +128,7 @@
 ## 13. Test Strategy (feature-level)
 - Unit tests: validation（必填、unique conflict）。
 - Integration tests (DB + RLS): viewer 禁止 write；跨 org 不可讀。
-- Minimal e2e: 新增 location → 在 inbound form 選擇 → stock view 顯示 location 名稱（跨 feature 冒煙測）。
+- Minimal e2e: 本 UC 先覆蓋「新增/改名 location」冒煙；跨 UC 的 inbound/stock view 串接驗證，於 UC-05 與 UC-08 補齊。
 - Fixtures: org + warehouse + locations。
 
 ## 14. Rollout / Migration Plan (if applicable)
@@ -140,4 +140,3 @@
 ## 15. Open Questions
 - Q1: location 的 scope 是否以 warehouse_id 為準（建議：是，以支援多倉庫）？
 - Q2: MVP 是否允許刪除 location？（建議：不允許；以後續作廢替代）
-

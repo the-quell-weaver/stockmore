@@ -4,13 +4,13 @@
 - **Doc**: docs/features/uc_01_auth_onboarding.md
 - **Status**: Implemented
 - **PRD linkage**: UC-01（使用者登入並建立/取得預設倉庫）
-- **Last updated**: 2026-02-19
+- **Last updated**: 2026-02-22
 
 ## 0. Summary
-本功能提供使用者以 Email magic link（或等價）登入，並在首次登入時自動建立一個「預設倉庫」供後續所有庫存操作使用。系統必須保證多租戶隔離（所有資料綁 org_id），並在任何頁面存取時都能取得使用者目前可用的預設倉庫。MVP 採「單人單倉庫」授權模型，但資料模型與 API 必須保留未來擴充到「多倉庫/共享/角色權限」的路徑。
+本功能提供使用者以 Email magic link 與 email+password 登入，並在首次登入時自動建立一個「預設倉庫」供後續所有庫存操作使用。系統必須保證多租戶隔離（所有資料綁 org_id），並在任何頁面存取時都能取得使用者目前可用的預設倉庫。MVP 採「單人單倉庫」授權模型，但資料模型與 API 必須保留未來擴充到「多倉庫/共享/角色權限」的路徑。
 
 ## 1. Goals
-- G1: 使用者可用 Email magic link 成功登入並建立帳號資料。
+- G1: 使用者可用 Email magic link 或 email+password 成功登入並建立帳號資料。
 - G2: 首次登入自動建立（或取得）預設 Org + 預設 Warehouse（或等價實體），並可重複安全地取得。
 - G3: 所有後續 feature 能可靠取得 current org/warehouse context（不依賴前端暫存）。
 
@@ -20,7 +20,7 @@
 
 ## 3. Scope
 ### 3.1 MVP scope (must-have)
-- S1: Email magic link 登入（Supabase Auth 或等價）。
+- S1: Email magic link 與 email+password 登入（Supabase Auth 或等價）。
 - S2: Onboarding bootstrap：建立/取得使用者的預設 Org、預設 Warehouse、初始字典（如需要）。
 - S3: Session 中能取得 org_id / warehouse_id（server-side 可信來源）。
 
@@ -44,18 +44,20 @@
 ## 5. UX (Mobile-first)
 ### 5.1 Entry points
 - `/login`：輸入 Email → 送出 magic link
+- `/auth/login`：輸入 Email + password
 - `/auth/callback`：magic link 回跳
 
 ### 5.2 Primary flow
-1. 使用者開啟 `/login`，輸入 Email 並送出。
-2. 使用者點擊 Email 中的 magic link 回到 `/auth/callback`。
-3. 系統建立 session 後執行 bootstrap：建立/取得預設 Org + 預設 Warehouse。
+1. 使用者以任一登入入口建立 session：`/login`（magic link）或 `/auth/login`（email+password）。
+2. 使用者若走 magic link，點擊 Email 中的連結回到 `/auth/callback` 完成 session；若走 password，送出表單後直接建立 session。
+3. 兩種登入方式都在 session 建立後執行 bootstrap：建立/取得預設 Org + 預設 Warehouse。
 4. 導向 `/stock`（或首頁），並在頂端顯示倉庫名稱（MVP 固定單倉庫）。
 
 ### 5.3 Alternate / edge flows
 - 空狀態：首次登入若 context 尚未可用，顯示「完成 onboarding 後會顯示預設倉庫」提示文字（CTA UI 納入 backlog）。
 - 錯誤狀態：magic link 過期/無效 → 回到 `/login` 並提示可重新寄送。
-- network：callback/bootstrap 失敗 → 回到 `/login`，使用者可直接重送 magic link 重試（需 idempotent）。
+- 錯誤狀態：password 錯誤 → 停留 `/auth/login` 並顯示 auth provider 錯誤訊息。
+- network：callback/bootstrap 或 password/bootstrap 失敗 → 回到登入入口重試（需 idempotent，且不得直接導向 `/stock`）。
 
 ### 5.4 UI notes
 - 表單欄位：Email（必填，基本格式驗證）。
@@ -91,6 +93,12 @@
   - Validation: email 格式
   - Failure: `AUTH_EMAIL_INVALID`（其餘 provider error 以 generic auth error 顯示）
 
+- `client signInWithPassword(email, password)`（Supabase client auth）
+  - Request: `{ email, password }`
+  - Response: session 建立後需立即執行 bootstrap
+  - AuthZ: public
+  - Failure: provider auth error 或 `BOOTSTRAP_FAILED`
+
 - `action bootstrapDefaultOrgAndWarehouse()`
   - Request: none
   - Response: `{ orgId, warehouseId }`
@@ -118,12 +126,12 @@
 - 查詢：以 user_id 找到其預設 org/warehouse。
 
 ## 12. Acceptance Criteria
-- AC1: Given 新使用者 When 完成 magic link 登入 Then 系統自動建立預設 org 與 warehouse，並導向庫存頁。
+- AC1: Given 新使用者 When 完成 magic link 或 password 登入 Then 系統自動建立預設 org 與 warehouse，並導向庫存頁。
 - AC2: Given 已有預設 org/warehouse When 重新登入或重跑 bootstrap Then 不會建立重複資料，回傳同一組 id。
 - AC3: Given 使用者 A When 嘗試讀取使用者 B 的 org/warehouse Then 受到 RLS 拒絕。
 
 ## 13. Test Strategy (feature-level)
-- Unit tests: bootstrap 的「已存在/不存在」分支、idempotency。
+- Unit tests: bootstrap 的「已存在/不存在」分支、idempotency；password login 後 bootstrap 成功/失敗分支。
 - Integration tests (DB + RLS): 驗證 membership/org RLS；跨 org 查詢失敗。
 - Minimal e2e（smoke，拆成兩段）：
   - login 頁可成功送出 magic link request（含 callback redirect 參數檢查）

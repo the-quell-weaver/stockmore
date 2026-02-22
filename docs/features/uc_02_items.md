@@ -4,10 +4,10 @@
 - **Doc**: docs/features/uc_02_items.md
 - **Status**: Implemented
 - **PRD linkage**: UC-02（管理品項：新增/編輯，含最低庫存、單位、標籤、備註）
-- **Last updated**: 2026-02-19
+- **Last updated**: 2026-02-22
 
 ## 0. Summary
-本功能讓使用者維護「品項主檔（Items）」作為庫存與交易的基礎：包含品名、單位、最低庫存、預設標籤/類別與備註。使用者可新增與直接編輯品項主檔（此為管理資料，允許直接修改）。所有資料必須綁定 org_id 並受 RLS 保護，確保不同 org 間隔離。MVP UI 需手機優先，能快速建立常用物資，並支援基本搜尋以在大量品項中快速找到目標。
+本功能讓使用者維護「品項主檔（Items）」作為庫存與交易的基礎：包含品名、單位、最低庫存、預設標籤/類別與備註。使用者可新增與直接編輯品項主檔（此為管理資料，允許直接修改）。所有資料必須綁定 org_id 並受 RLS 保護，確保不同 org 間隔離。MVP UI 需手機優先，能快速建立常用物資，並支援基本搜尋以在大量品項中快速找到目標；標籤欄位先保留資料介面，UI 暫不暴露選擇器。
 
 ## 1. Goals
 - G1: 使用者可新增 Items，作為後續入庫/出庫/盤點的選擇來源。
@@ -22,7 +22,7 @@
 ## 3. Scope
 ### 3.1 MVP scope (must-have)
 - S1: Items CRUD：新增、編輯、列表檢視（允許刪除？MVP 建議：提供 soft-delete 或禁止刪除；見 Domain Rules）。
-- S2: 欄位：name、unit、min_stock（可為 0）、default_tag_ids（可選）、note（可選）。
+- S2: 欄位：name、unit、min_stock（可為 0）、default_tag_ids（可選）、note（可選）；`default_tag_ids` 先保留 API/資料層介面，MVP UI 暫不暴露標籤選擇器。
 - S3: Items 列表 + 搜尋（name keyword）。
 
 ### 3.2 Out of scope / Backlog hooks (future)
@@ -49,7 +49,7 @@
 ### 5.2 Primary flow
 1. 使用者進入 Items 列表。
 2. 點擊 `新增品項`。
-3. 填寫品名、單位、最低庫存、標籤（可選）、備註（可選）。
+3. 填寫品名、單位、最低庫存、備註（可選）；標籤欄位保留於資料介面，MVP UI 先不顯示。
 4. 儲存後回到列表，並可立即用於入庫流程。
 
 ### 5.3 Alternate / edge flows
@@ -58,7 +58,8 @@
 - 大量資料：列表支援搜尋（debounced），並可分頁/無限捲動（後續）。
 
 ### 5.4 UI notes
-- 表單預設值：min_stock 預設 0；標籤預設空；note 預設空。
+- 表單預設值：min_stock 預設 0；note 預設空。
+- 標籤欄位：MVP UI 暫不暴露，待 UC-04 串接後開啟。
 - 快速操作：手機上將 `儲存` 固定在底部 sticky bar。
 - 桌面版：可雙欄（列表 + 詳情）作為後續優化，但 MVP 先單頁即可。
 
@@ -98,7 +99,7 @@
   - Response: `{ item }`
   - AuthZ: owner/editor
   - Validation: 同上
-  - Failure: `NOT_FOUND`, `FORBIDDEN`, `ITEM_NAME_CONFLICT`
+  - Failure: `ITEM_NOT_FOUND`, `FORBIDDEN`, `ITEM_NAME_CONFLICT`
 
 - `action listItems(query?)`
   - Request: `{ q? }`
@@ -142,5 +143,5 @@
 - 回滾策略：保留 items 資料；若改模型（單標籤→多標籤）需提供 backward-compatible read。
 
 ## 15. Open Questions
-- Q1: tags 模型 MVP 決議採「單一標籤」，使用 `items.default_tag_id`（nullable，UI 可先不暴露選擇器，待 UC-04 連接）。
+- Q1:（已決議）tags 模型 MVP 採「單一標籤」儲存（`items.default_tag_id`，nullable），API 介面使用複數 `defaultTagIds` 以保留後續多標籤擴充路徑，UI 待 UC-04 串接前先不暴露選擇器。
 - Q2: Items 刪除策略決議採「soft-delete」，使用 `items.is_deleted`，預設列表不顯示已封存。
