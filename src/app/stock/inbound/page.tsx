@@ -149,7 +149,7 @@ async function InboundContent({
                 <form
                   action={createInboundBatchAction}
                   className="mt-4 grid gap-3"
-                  data-testid="create-batch-form"
+                  data-testid="inbound-new-batch-form"
                 >
                   <input type="hidden" name="itemId" value={selectedItemId} />
                   <input type="hidden" name="idempotencyKey" value={randomUUID()} />
@@ -250,19 +250,31 @@ async function InboundContent({
                           </div>
                           <form
                             action={addInboundToBatchAction}
-                            className="flex gap-2"
+                            className="grid gap-2"
                           >
                             <input type="hidden" name="batchId" value={batch.id} />
                             <input type="hidden" name="idempotencyKey" value={randomUUID()} />
-                            <input
-                              name="quantity"
-                              type="number"
-                              min={1}
-                              step={1}
-                              required
-                              defaultValue={1}
-                              className="h-10 w-24 rounded border px-3"
-                              data-testid={`add-quantity-${batch.id}`}
+                            <div className="flex items-center gap-2">
+                              <input
+                                name="quantity"
+                                type="number"
+                                min={1}
+                                step={1}
+                                required
+                                defaultValue={1}
+                                className="h-10 w-24 rounded border px-3"
+                                data-testid={`add-quantity-${batch.id}`}
+                              />
+                              <span className="text-sm text-muted-foreground">
+                                {selectedItem.unit}
+                              </span>
+                            </div>
+                            <textarea
+                              name="note"
+                              rows={2}
+                              placeholder="備註（可選）"
+                              className="min-h-12 rounded border px-3 py-2 text-sm"
+                              data-testid={`add-note-${batch.id}`}
                             />
                             <button
                               type="submit"
