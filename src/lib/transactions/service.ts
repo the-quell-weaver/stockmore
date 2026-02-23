@@ -2,8 +2,10 @@ import type { PostgrestError, SupabaseClient } from "@supabase/supabase-js";
 
 import { TransactionError, TRANSACTION_ERROR_CODES } from "@/lib/transactions/errors";
 import {
+  type ConsumeFromBatchInput,
   type CreateInboundBatchInput,
   type AddInboundToBatchInput,
+  validateConsumeFromBatchInput,
   validateCreateInboundBatchInput,
   validateAddInboundToBatchInput,
 } from "@/lib/transactions/validation";
@@ -20,6 +22,18 @@ type RpcInboundRow = {
 };
 
 export type InboundResult = {
+  batchId: string;
+  transactionId: string;
+  batchQuantity: number;
+};
+
+type RpcConsumeRow = {
+  batch_id: string;
+  transaction_id: string;
+  batch_quantity: number;
+};
+
+export type ConsumeResult = {
   batchId: string;
   transactionId: string;
   batchQuantity: number;
@@ -50,6 +64,36 @@ export type Batch = {
   createdAt: string;
   updatedAt: string;
 };
+
+export async function consumeFromBatch(
+  supabase: SupabaseClient,
+  input: ConsumeFromBatchInput,
+): Promise<ConsumeResult> {
+  const validated = validateConsumeFromBatchInput(input);
+
+  const { data, error } = await supabase.rpc("consume_from_batch", {
+    p_batch_id: validated.batchId,
+    p_quantity: validated.quantity,
+    p_note: validated.note ?? null,
+    p_source: "web",
+    p_idempotency_key: validated.idempotencyKey ?? null,
+  });
+
+  if (error) {
+    throw mapRpcError(error);
+  }
+
+  const row = (Array.isArray(data) ? data[0] : data) as RpcConsumeRow | null;
+  if (!row?.batch_id) {
+    throw new TransactionError(TRANSACTION_ERROR_CODES.FORBIDDEN);
+  }
+
+  return {
+    batchId: row.batch_id,
+    transactionId: row.transaction_id,
+    batchQuantity: Number(row.batch_quantity),
+  };
+}
 
 export async function createInboundBatch(
   supabase: SupabaseClient,
@@ -183,6 +227,9 @@ function mapRpcError(error: PostgrestError): TransactionError {
   }
   if (msg.includes("BATCH_NOT_FOUND")) {
     return new TransactionError(TRANSACTION_ERROR_CODES.BATCH_NOT_FOUND);
+  }
+  if (msg.includes("INSUFFICIENT_STOCK")) {
+    return new TransactionError(TRANSACTION_ERROR_CODES.INSUFFICIENT_STOCK);
   }
   return new TransactionError(TRANSACTION_ERROR_CODES.FORBIDDEN, msg);
 }

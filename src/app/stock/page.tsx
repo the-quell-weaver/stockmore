@@ -36,6 +36,13 @@ async function StockContent() {
             入庫
           </Link>
           <Link
+            href="/stock/consume"
+            className="inline-flex h-10 items-center rounded bg-primary px-4 text-sm text-primary-foreground"
+            data-testid="nav-consume"
+          >
+            消耗
+          </Link>
+          <Link
             href="/stock/items"
             className="inline-flex h-10 items-center rounded border px-4 text-sm"
           >
