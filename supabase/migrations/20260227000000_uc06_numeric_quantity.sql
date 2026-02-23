@@ -1,6 +1,15 @@
 -- UC_06: Upgrade quantity columns from integer to numeric to support decimal consumption.
 -- Also updates existing inbound RPC return types + internal variables to numeric
 -- so that batch_quantity is not truncated after decimal consumption operations.
+--
+-- Security fixes carried forward from 20260226000001_uc05_fix_inbound_rpc_security.sql:
+--   Fix 1 (create_inbound_batch only): validate storage_location_id / tag_id belong
+--          to the caller's org (SECURITY DEFINER bypasses RLS).
+--   Fix 2 (both RPCs): race-safe idempotency via BEGIN … EXCEPTION WHEN
+--          unique_violation THEN …, not a racy pre-check SELECT.
+--
+-- Must DROP before CREATE because Postgres forbids CREATE OR REPLACE to change
+-- a function's return type (integer → numeric).
 
 begin;
 
@@ -16,7 +25,6 @@ alter table public.transactions
 
 -- ─────────────────────────────────────────────────────────────────────────────
 -- 2. Re-create create_inbound_batch with numeric return type
---    (logic unchanged; only internal variable + return type updated)
 --    Must DROP first: Postgres forbids CREATE OR REPLACE to change return type.
 -- ─────────────────────────────────────────────────────────────────────────────
 
@@ -76,22 +84,6 @@ begin
     raise exception 'FORBIDDEN';
   end if;
 
-  -- ── idempotency ───────────────────────────────────────────────────────────
-  if p_idempotency_key is not null then
-    select t.batch_id, t.id, b.quantity
-      into v_existing_batch_id, v_existing_txn_id, v_existing_qty
-      from public.transactions t
-      join public.batches b on b.id = t.batch_id
-     where t.org_id = v_org_id
-       and t.idempotency_key = p_idempotency_key
-     limit 1;
-
-    if found then
-      return query select v_existing_batch_id, v_existing_txn_id, v_existing_qty;
-      return;
-    end if;
-  end if;
-
   -- ── validation ────────────────────────────────────────────────────────────
   if p_quantity is null or p_quantity <= 0 then
     raise exception 'QUANTITY_INVALID';
@@ -106,18 +98,72 @@ begin
     raise exception 'ITEM_NOT_FOUND';
   end if;
 
-  -- ── writes ────────────────────────────────────────────────────────────────
-  insert into public.batches
-    (org_id, warehouse_id, item_id, quantity, expiry_date, storage_location_id, tag_id, created_by)
-  values
-    (v_org_id, v_warehouse_id, p_item_id, p_quantity, p_expiry_date, p_storage_location_id, p_tag_id, v_user_id)
-  returning id into v_batch_id;
+  -- Fix 1: validate optional FK fields are scoped to the caller's org ────────
+  if p_storage_location_id is not null then
+    if not exists (
+      select 1 from public.storage_locations sl
+      where sl.id = p_storage_location_id
+        and sl.org_id = v_org_id
+    ) then
+      raise exception 'FORBIDDEN';
+    end if;
+  end if;
 
-  insert into public.transactions
-    (org_id, warehouse_id, batch_id, item_id, type, quantity_delta, idempotency_key, note, source, created_by)
-  values
-    (v_org_id, v_warehouse_id, v_batch_id, p_item_id, 'inbound', p_quantity, p_idempotency_key, p_note, p_source, v_user_id)
-  returning id into v_txn_id;
+  if p_tag_id is not null then
+    if not exists (
+      select 1 from public.tags t
+      where t.id = p_tag_id
+        and t.org_id = v_org_id
+    ) then
+      raise exception 'FORBIDDEN';
+    end if;
+  end if;
+
+  -- ── writes (Fix 2: race-safe idempotency via exception handler) ───────────
+  if p_idempotency_key is not null then
+    begin
+      insert into public.batches
+        (org_id, warehouse_id, item_id, quantity, expiry_date, storage_location_id, tag_id, created_by)
+      values
+        (v_org_id, v_warehouse_id, p_item_id, p_quantity, p_expiry_date, p_storage_location_id, p_tag_id, v_user_id)
+      returning id into v_batch_id;
+
+      insert into public.transactions
+        (org_id, warehouse_id, batch_id, item_id, type, quantity_delta, idempotency_key, note, source, created_by)
+      values
+        (v_org_id, v_warehouse_id, v_batch_id, p_item_id, 'inbound', p_quantity, p_idempotency_key, p_note, p_source, v_user_id)
+      returning id into v_txn_id;
+
+    exception when unique_violation then
+      -- Savepoint rolled back automatically; read the pre-existing record.
+      select t.batch_id, t.id, b.quantity
+        into v_existing_batch_id, v_existing_txn_id, v_existing_qty
+        from public.transactions t
+        join public.batches b on b.id = t.batch_id
+       where t.org_id = v_org_id
+         and t.idempotency_key = p_idempotency_key
+       limit 1;
+
+      if not found then
+        raise exception 'FORBIDDEN';
+      end if;
+
+      return query select v_existing_batch_id, v_existing_txn_id, v_existing_qty;
+      return;
+    end;
+  else
+    insert into public.batches
+      (org_id, warehouse_id, item_id, quantity, expiry_date, storage_location_id, tag_id, created_by)
+    values
+      (v_org_id, v_warehouse_id, p_item_id, p_quantity, p_expiry_date, p_storage_location_id, p_tag_id, v_user_id)
+    returning id into v_batch_id;
+
+    insert into public.transactions
+      (org_id, warehouse_id, batch_id, item_id, type, quantity_delta, idempotency_key, note, source, created_by)
+    values
+      (v_org_id, v_warehouse_id, v_batch_id, p_item_id, 'inbound', p_quantity, p_idempotency_key, p_note, p_source, v_user_id)
+    returning id into v_txn_id;
+  end if;
 
   return query select v_batch_id, v_txn_id, p_quantity::numeric;
 end;
@@ -125,7 +171,6 @@ $$;
 
 -- ─────────────────────────────────────────────────────────────────────────────
 -- 3. Re-create add_inbound_to_batch with numeric return type
---    (logic unchanged; only internal variables + return type updated)
 --    Must DROP first: Postgres forbids CREATE OR REPLACE to change return type.
 -- ─────────────────────────────────────────────────────────────────────────────
 
@@ -182,52 +227,83 @@ begin
     raise exception 'FORBIDDEN';
   end if;
 
-  -- ── idempotency ───────────────────────────────────────────────────────────
-  if p_idempotency_key is not null then
-    select t.id, b.quantity
-      into v_existing_txn_id, v_existing_qty
-      from public.transactions t
-      join public.batches b on b.id = t.batch_id
-     where t.org_id = v_org_id
-       and t.idempotency_key = p_idempotency_key
-     limit 1;
-
-    if found then
-      return query select p_batch_id, v_existing_txn_id, v_existing_qty;
-      return;
-    end if;
-  end if;
-
   -- ── validation ────────────────────────────────────────────────────────────
   if p_quantity is null or p_quantity <= 0 then
     raise exception 'QUANTITY_INVALID';
   end if;
 
-  -- ── lock + verify batch ownership ─────────────────────────────────────────
-  select b.item_id
-    into v_batch_item_id
-    from public.batches b
-   where b.id = p_batch_id
-     and b.org_id = v_org_id
-   for update;
+  -- ── writes (Fix 2: race-safe idempotency via exception handler) ───────────
+  if p_idempotency_key is not null then
+    begin
+      -- Row lock prevents concurrent quantity updates to the same batch.
+      select b.item_id
+        into v_batch_item_id
+        from public.batches b
+       where b.id = p_batch_id
+         and b.org_id = v_org_id
+       for update;
 
-  if v_batch_item_id is null then
-    raise exception 'BATCH_NOT_FOUND';
+      if v_batch_item_id is null then
+        raise exception 'BATCH_NOT_FOUND';
+      end if;
+
+      update public.batches
+         set quantity   = quantity + p_quantity,
+             updated_at = now()
+       where id     = p_batch_id
+         and org_id = v_org_id
+      returning quantity into v_new_quantity;
+
+      insert into public.transactions
+        (org_id, warehouse_id, batch_id, item_id, type, quantity_delta, idempotency_key, note, source, created_by)
+      values
+        (v_org_id, v_warehouse_id, p_batch_id, v_batch_item_id, 'inbound', p_quantity, p_idempotency_key, p_note, p_source, v_user_id)
+      returning id into v_txn_id;
+
+    exception when unique_violation then
+      -- Savepoint rolled back automatically (UPDATE + INSERT undone);
+      -- read the current state from the first successful write.
+      select t.id, b.quantity
+        into v_existing_txn_id, v_existing_qty
+        from public.transactions t
+        join public.batches b on b.id = t.batch_id
+       where t.org_id = v_org_id
+         and t.idempotency_key = p_idempotency_key
+       limit 1;
+
+      if not found then
+        raise exception 'FORBIDDEN';
+      end if;
+
+      return query select p_batch_id, v_existing_txn_id, v_existing_qty;
+      return;
+    end;
+  else
+    -- No idempotency key: lock + verify + write directly.
+    select b.item_id
+      into v_batch_item_id
+      from public.batches b
+     where b.id = p_batch_id
+       and b.org_id = v_org_id
+     for update;
+
+    if v_batch_item_id is null then
+      raise exception 'BATCH_NOT_FOUND';
+    end if;
+
+    update public.batches
+       set quantity   = quantity + p_quantity,
+           updated_at = now()
+     where id     = p_batch_id
+       and org_id = v_org_id
+    returning quantity into v_new_quantity;
+
+    insert into public.transactions
+      (org_id, warehouse_id, batch_id, item_id, type, quantity_delta, idempotency_key, note, source, created_by)
+    values
+      (v_org_id, v_warehouse_id, p_batch_id, v_batch_item_id, 'inbound', p_quantity, p_idempotency_key, p_note, p_source, v_user_id)
+    returning id into v_txn_id;
   end if;
-
-  -- ── writes ────────────────────────────────────────────────────────────────
-  update public.batches
-     set quantity   = quantity + p_quantity,
-         updated_at = now()
-   where id      = p_batch_id
-     and org_id  = v_org_id
-  returning quantity into v_new_quantity;
-
-  insert into public.transactions
-    (org_id, warehouse_id, batch_id, item_id, type, quantity_delta, idempotency_key, note, source, created_by)
-  values
-    (v_org_id, v_warehouse_id, p_batch_id, v_batch_item_id, 'inbound', p_quantity, p_idempotency_key, p_note, p_source, v_user_id)
-  returning id into v_txn_id;
 
   return query select p_batch_id, v_txn_id, v_new_quantity;
 end;
