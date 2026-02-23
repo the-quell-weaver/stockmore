@@ -134,3 +134,39 @@ function normalizeOptionalText(raw?: string | null): string | null {
   const value = raw.trim();
   return value.length > 0 ? value : null;
 }
+
+export type ListStockBatchesInput = {
+  q?: string | null;
+  limit?: number | null;
+  cursor?: string | null;
+};
+
+type ValidatedListStockBatchesInput = {
+  q: string | null;
+  limit: number;
+  cursor: string | null;
+};
+
+const MAX_Q_LENGTH = 200;
+const DEFAULT_LIMIT = 50;
+const MIN_LIMIT = 1;
+const MAX_LIMIT = 200;
+
+export function validateListStockBatchesInput(
+  input: ListStockBatchesInput,
+): ValidatedListStockBatchesInput {
+  const rawQ = input.q == null ? null : input.q.trim();
+  if (rawQ !== null && rawQ.length > MAX_Q_LENGTH) {
+    throw new TransactionError(TRANSACTION_ERROR_CODES.INVALID_QUERY);
+  }
+  const q = rawQ && rawQ.length > 0 ? rawQ : null;
+
+  let limit = DEFAULT_LIMIT;
+  if (input.limit != null && Number.isFinite(input.limit)) {
+    limit = Math.min(MAX_LIMIT, Math.max(MIN_LIMIT, Math.floor(input.limit)));
+  }
+
+  const cursor = normalizeOptionalText(input.cursor);
+
+  return { q, limit, cursor };
+}
