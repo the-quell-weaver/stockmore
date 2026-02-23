@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import { TRANSACTION_ERROR_CODES } from "@/lib/transactions/errors";
 import {
+  validateConsumeFromBatchInput,
   validateCreateInboundBatchInput,
   validateAddInboundToBatchInput,
 } from "@/lib/transactions/validation";
@@ -136,6 +137,102 @@ describe("validateCreateInboundBatchInput", () => {
     expect(result.idempotencyKey).toBe("uuid-abc-123");
     expect(result.storageLocationId).toBe("loc-uuid");
     expect(result.tagId).toBe("tag-uuid");
+  });
+});
+
+describe("validateConsumeFromBatchInput", () => {
+  const VALID_BATCH_ID = "00000000-0000-0000-0000-000000000002";
+
+  it("accepts decimal quantity", () => {
+    const result = validateConsumeFromBatchInput({
+      batchId: VALID_BATCH_ID,
+      quantity: 2.5,
+    });
+    expect(result.batchId).toBe(VALID_BATCH_ID);
+    expect(result.quantity).toBe(2.5);
+    expect(result.note).toBeNull();
+    expect(result.idempotencyKey).toBeNull();
+  });
+
+  it("accepts integer quantity (decimals are a superset of integers)", () => {
+    const result = validateConsumeFromBatchInput({
+      batchId: VALID_BATCH_ID,
+      quantity: 1,
+    });
+    expect(result.quantity).toBe(1);
+  });
+
+  it("accepts small decimal quantity", () => {
+    const result = validateConsumeFromBatchInput({
+      batchId: VALID_BATCH_ID,
+      quantity: 0.001,
+    });
+    expect(result.quantity).toBe(0.001);
+  });
+
+  it("rejects quantity=0", () => {
+    expect(() =>
+      validateConsumeFromBatchInput({ batchId: VALID_BATCH_ID, quantity: 0 }),
+    ).toThrow(expect.objectContaining({ code: TRANSACTION_ERROR_CODES.QUANTITY_INVALID }));
+  });
+
+  it("rejects negative quantity", () => {
+    expect(() =>
+      validateConsumeFromBatchInput({ batchId: VALID_BATCH_ID, quantity: -1 }),
+    ).toThrow(expect.objectContaining({ code: TRANSACTION_ERROR_CODES.QUANTITY_INVALID }));
+  });
+
+  it("rejects NaN quantity", () => {
+    expect(() =>
+      validateConsumeFromBatchInput({ batchId: VALID_BATCH_ID, quantity: NaN }),
+    ).toThrow(expect.objectContaining({ code: TRANSACTION_ERROR_CODES.QUANTITY_INVALID }));
+  });
+
+  it("rejects Infinity quantity", () => {
+    expect(() =>
+      validateConsumeFromBatchInput({ batchId: VALID_BATCH_ID, quantity: Infinity }),
+    ).toThrow(expect.objectContaining({ code: TRANSACTION_ERROR_CODES.QUANTITY_INVALID }));
+  });
+
+  it("rejects empty batchId", () => {
+    expect(() =>
+      validateConsumeFromBatchInput({ batchId: "", quantity: 1 }),
+    ).toThrow(expect.objectContaining({ code: TRANSACTION_ERROR_CODES.FORBIDDEN }));
+  });
+
+  it("rejects whitespace-only batchId", () => {
+    expect(() =>
+      validateConsumeFromBatchInput({ batchId: "   ", quantity: 1 }),
+    ).toThrow(expect.objectContaining({ code: TRANSACTION_ERROR_CODES.FORBIDDEN }));
+  });
+
+  it("normalizes empty note to null", () => {
+    const result = validateConsumeFromBatchInput({
+      batchId: VALID_BATCH_ID,
+      quantity: 1,
+      note: "",
+    });
+    expect(result.note).toBeNull();
+  });
+
+  it("normalizes whitespace-only idempotencyKey to null", () => {
+    const result = validateConsumeFromBatchInput({
+      batchId: VALID_BATCH_ID,
+      quantity: 1,
+      idempotencyKey: "  ",
+    });
+    expect(result.idempotencyKey).toBeNull();
+  });
+
+  it("preserves non-empty optional fields", () => {
+    const result = validateConsumeFromBatchInput({
+      batchId: VALID_BATCH_ID,
+      quantity: 1,
+      note: "used in drill",
+      idempotencyKey: "key-abc-123",
+    });
+    expect(result.note).toBe("used in drill");
+    expect(result.idempotencyKey).toBe("key-abc-123");
   });
 });
 

@@ -1,5 +1,12 @@
 import { TransactionError, TRANSACTION_ERROR_CODES } from "@/lib/transactions/errors";
 
+export type ConsumeFromBatchInput = {
+  batchId: string;
+  quantity: number;
+  note?: string | null;
+  idempotencyKey?: string | null;
+};
+
 export type CreateInboundBatchInput = {
   itemId: string;
   quantity: number;
@@ -16,6 +23,17 @@ export type AddInboundToBatchInput = {
   note?: string | null;
   idempotencyKey?: string | null;
 };
+
+export function validateConsumeFromBatchInput(
+  input: ConsumeFromBatchInput,
+): ConsumeFromBatchInput {
+  return {
+    batchId: validateId(input.batchId),
+    quantity: validateDecimalQuantity(input.quantity),
+    note: normalizeOptionalText(input.note),
+    idempotencyKey: normalizeOptionalText(input.idempotencyKey),
+  };
+}
 
 export function validateCreateInboundBatchInput(
   input: CreateInboundBatchInput,
@@ -52,6 +70,13 @@ function validateId(raw: string): string {
 
 function validateQuantity(raw: number): number {
   if (!Number.isInteger(raw) || raw <= 0) {
+    throw new TransactionError(TRANSACTION_ERROR_CODES.QUANTITY_INVALID);
+  }
+  return raw;
+}
+
+function validateDecimalQuantity(raw: number): number {
+  if (!Number.isFinite(raw) || raw <= 0) {
     throw new TransactionError(TRANSACTION_ERROR_CODES.QUANTITY_INVALID);
   }
   return raw;

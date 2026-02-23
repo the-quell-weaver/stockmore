@@ -2,7 +2,7 @@
 
 # Feature: Transactions — Consumption（消耗/出庫：手動選擇批次並扣減）
 - **Doc**: docs/features/transactions-consumption.md
-- **Status**: Draft
+- **Status**: Implemented
 - **PRD linkage**: UC-06（消耗：手動選擇批次並扣減，產生交易紀錄）
 - **Last updated**: 2026-02-19
 

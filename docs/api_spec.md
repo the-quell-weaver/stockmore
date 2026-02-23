@@ -51,6 +51,9 @@
 | createItem | Server Action | `createItemAction` | Authenticated (owner/editor) | 建立 item 主檔 | UC_02 |
 | updateItem | Server Action | `updateItemAction` | Authenticated (owner/editor) | 編輯 item 主檔（含 soft-delete） | UC_02 |
 | listItems | Server-side query | `listItems` | Authenticated (viewer+) | 以名稱關鍵字列出 items | UC_02 |
+| createInboundBatch | Server Action | `createInboundBatchAction` | Authenticated (owner/editor) | 建立新批次並入庫 | UC_05 |
+| addInboundToBatch | Server Action | `addInboundToBatchAction` | Authenticated (owner/editor) | 補充既有批次庫存 | UC_05 |
+| consumeFromBatch | Server Action | `consumeFromBatchAction` | Authenticated (owner/editor) | 從批次扣減消耗數量 | UC_06 |
 
 ## 3. 介面規格（逐項）
 
@@ -201,6 +204,43 @@
 - `ITEM_MIN_STOCK_INVALID`
 - `ITEM_NAME_CONFLICT`
 - `FORBIDDEN`
+
+### 3.7 `consumeFromBatchAction`
+
+**Type**
+- Server Action
+
+**Purpose**
+- 從指定批次扣減消耗數量，原子寫入 consumption 交易紀錄並更新 batch.quantity（UC_06）。
+
+**Auth**
+- authenticated owner/editor（viewer 被拒絕）
+
+**Request**
+- FormData: `{ batchId, quantity, note?, idempotencyKey? }`
+- Validation:
+  - `batchId`：非空字串，且屬於呼叫者同 org
+  - `quantity`：正數（允許小數），且 <= batch.quantity
+  - `note`：可選文字
+  - `idempotencyKey`：可選，重送時保證冪等（同 org 內唯一）
+
+**Response**
+- Success: redirect `/stock/consume?success=consumed`
+- Side effects:
+  - `transactions` 插入一筆 type=`'consumption'`, quantity_delta=`-quantity`
+  - `batches.quantity` 減少 quantity（atomic，SELECT FOR UPDATE 防止競態）
+
+**Errors**
+- `QUANTITY_INVALID`：quantity ≤ 0 或非有限數
+- `BATCH_NOT_FOUND`：batchId 不存在或不屬於呼叫者 org
+- `INSUFFICIENT_STOCK`：quantity > batch.quantity（扣減後會變負數）
+- `FORBIDDEN`：未登入或角色為 viewer
+
+**Notes**
+- `quantity_delta` 寫入為負數（例如消耗 2.5 → delta = -2.5），與入庫正數 delta 對稱，便於重播。
+- 冪等：同 `(org_id, idempotency_key)` 第二次呼叫回傳同一筆交易，不重複扣減。
+- 實作：`src/app/stock/consume/actions.ts` → `consume_from_batch()` DB RPC。
+- 測試：`src/tests/integration/transactions/consumption.integration.test.ts`。
 
 ### 3.x `<name>`
 
