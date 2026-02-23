@@ -54,6 +54,7 @@
 | createInboundBatch | Server Action | `createInboundBatchAction` | Authenticated (owner/editor) | 建立新批次並入庫 | UC_05 |
 | addInboundToBatch | Server Action | `addInboundToBatchAction` | Authenticated (owner/editor) | 補充既有批次庫存 | UC_05 |
 | consumeFromBatch | Server Action | `consumeFromBatchAction` | Authenticated (owner/editor) | 從批次扣減消耗數量 | UC_06 |
+| adjustBatchQuantity | Server Action | `adjustBatchQuantityAction` | Authenticated (owner/editor) | 指定批次實際數量（盤點調整） | UC_07 |
 
 ## 3. 介面規格（逐項）
 
@@ -241,6 +242,43 @@
 - 冪等：同 `(org_id, idempotency_key)` 第二次呼叫回傳同一筆交易，不重複扣減。
 - 實作：`src/app/stock/consume/actions.ts` → `consume_from_batch()` DB RPC。
 - 測試：`src/tests/integration/transactions/consumption.integration.test.ts`。
+
+### 3.8 `adjustBatchQuantityAction`
+
+**Type**
+- Server Action
+
+**Purpose**
+- 針對指定批次輸入「盤點後實際數量」，原子寫入 adjustment 交易紀錄並將批次數量設為指定值（UC_07）。
+
+**Auth**
+- authenticated owner/editor（viewer 被拒絕）
+
+**Request**
+- FormData: `{ batchId, actualQuantity, note?, idempotencyKey? }`
+- Validation:
+  - `batchId`：非空字串，且屬於呼叫者同 org
+  - `actualQuantity`：有限數且 >= 0（允許 0）
+  - `note`：可選文字
+  - `idempotencyKey`：可選，重送時保證冪等（同 org 內唯一）
+
+**Response**
+- Success: redirect `/stock/adjust?success=adjusted`
+- Side effects:
+  - `transactions` 插入一筆 type=`'adjustment'`, quantity_delta=`actualQuantity - prior_quantity`, quantity_after=`actualQuantity`
+  - `batches.quantity` 設為 `actualQuantity`（atomic，SELECT FOR UPDATE 防止競態）
+
+**Errors**
+- `QUANTITY_INVALID`：actualQuantity < 0 或非有限數
+- `BATCH_NOT_FOUND`：batchId 不存在或不屬於呼叫者 org
+- `FORBIDDEN`：未登入或角色為 viewer
+- `CONFLICT`：idempotency 查詢異常（罕見）
+
+**Notes**
+- 語意是「指定實際數量」，差額（delta）由系統計算，可正可負。
+- 冪等：同 `(org_id, idempotency_key)` 第二次呼叫回傳同一筆交易，不重複調整。
+- 實作：`src/app/stock/adjust/actions.ts` → `adjust_batch_quantity()` DB RPC。
+- 測試：`src/tests/integration/transactions/adjustment.integration.test.ts`。
 
 ### 3.x `<name>`
 

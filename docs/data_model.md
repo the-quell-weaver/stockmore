@@ -266,6 +266,7 @@
 - UC_03：`supabase/migrations/20260224000000_uc03_storage_locations.sql` 新增 `storage_locations`、大小寫無感 unique index、`updated_at` trigger 與 RLS（owner/editor 可寫、member 可讀）。
 - UC_03 PR#1 review fix：`supabase/migrations/20260224010000_uc03_storage_locations_updated_by.sql` 補上 `updated_by` 欄位，並強化 insert/update policy（要求 `updated_by = auth.uid()`）。
 - UC_05：`supabase/migrations/20260226000000_uc05_batches_transactions.sql` 新增 `batches`、`transactions`，RLS SELECT only（寫入僅透過 RPC）；建立 `create_inbound_batch`、`add_inbound_to_batch` security definer RPC（含原子性寫入與 idempotency 保護）。
+- UC_07：`supabase/migrations/20260228000000_uc07_adjustment.sql` 在 `transactions` 新增 `quantity_after numeric null` 欄位（adjustment 事件的調整後數量，供重播校正用；其他類型交易為 null）；新增 `transactions(batch_id, created_at)` 複合索引；建立 `adjust_batch_quantity` security definer RPC（SELECT FOR UPDATE 防競態、idempotency via unique_violation handler）。
 
 ## 9. Seed / Fixtures（測試資料）
 

@@ -4,6 +4,7 @@ export const TRANSACTION_ERROR_CODES = {
   BATCH_NOT_FOUND: "BATCH_NOT_FOUND",
   INSUFFICIENT_STOCK: "INSUFFICIENT_STOCK",
   FORBIDDEN: "FORBIDDEN",
+  CONFLICT: "CONFLICT",
 } as const;
 
 export type TransactionErrorCode =
