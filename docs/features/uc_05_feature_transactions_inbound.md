@@ -25,7 +25,7 @@
   - 建立新批次（create batch + inbound transaction）
   - 選擇既有批次增加數量（inbound transaction）
 - S2: 欄位：
-  - 必填：item、quantity（整數 > 0）
+  - 必填：item、quantity（整數 > 0；DB 欄位 `batches.quantity` 與 `transactions.quantity_delta` 型別為 `numeric`，由 UC_06 擴充以支援小數消耗；入庫驗證層仍強制整數）
   - 可選：expiry_date、storage_location_id、tag_id(s)、note
 - S3: 成功後在 stock view 能看到批次數量更新；在交易列表（若有）可看到入庫紀錄。
 
@@ -76,14 +76,14 @@
 - Tables: `items`, `batches`, `transactions`, `storage_locations`, `tags`
 - New columns (if any):
   - `transactions.type = 'inbound'`
-  - `transactions.quantity_delta`（正整數）
+  - `transactions.quantity_delta`（numeric；入庫為正整數，UC_06 後消耗為負小數，UC_07 後調整可正可負）
   - `transactions.batch_id`, `transactions.item_id`
   - `transactions.note`（可選）, `transactions.source`（如 'web'，可選）
 - New tables (if any): 無（以既有交易表承載）
 
 ### 6.2 Constraints & invariants
 - 不可刪除：`transactions` append-only；錯誤以後續交易修正（等價沖銷）。
-- 數量規則：入庫 quantity 必須是整數且 > 0。
+- 數量規則：入庫 quantity 必須是整數且 > 0（驗證層強制；DB 型別為 numeric，供 UC_06 小數消耗共用）。
 - referential integrity：
   - `batches.item_id` → `items.id`
   - `transactions.batch_id` → `batches.id`
