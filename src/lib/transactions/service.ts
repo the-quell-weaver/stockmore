@@ -5,9 +5,11 @@ import {
   type ConsumeFromBatchInput,
   type CreateInboundBatchInput,
   type AddInboundToBatchInput,
+  type AdjustBatchQuantityInput,
   validateConsumeFromBatchInput,
   validateCreateInboundBatchInput,
   validateAddInboundToBatchInput,
+  validateAdjustBatchQuantityInput,
 } from "@/lib/transactions/validation";
 
 type Membership = {
@@ -34,6 +36,18 @@ type RpcConsumeRow = {
 };
 
 export type ConsumeResult = {
+  batchId: string;
+  transactionId: string;
+  batchQuantity: number;
+};
+
+type RpcAdjustRow = {
+  batch_id: string;
+  transaction_id: string;
+  batch_quantity: number;
+};
+
+export type AdjustResult = {
   batchId: string;
   transactionId: string;
   batchQuantity: number;
@@ -158,6 +172,36 @@ export async function addInboundToBatch(
   };
 }
 
+export async function adjustBatchQuantity(
+  supabase: SupabaseClient,
+  input: AdjustBatchQuantityInput,
+): Promise<AdjustResult> {
+  const validated = validateAdjustBatchQuantityInput(input);
+
+  const { data, error } = await supabase.rpc("adjust_batch_quantity", {
+    p_batch_id: validated.batchId,
+    p_actual_quantity: validated.actualQuantity,
+    p_note: validated.note ?? null,
+    p_source: "web",
+    p_idempotency_key: validated.idempotencyKey ?? null,
+  });
+
+  if (error) {
+    throw mapRpcError(error);
+  }
+
+  const row = (Array.isArray(data) ? data[0] : data) as RpcAdjustRow | null;
+  if (!row?.batch_id) {
+    throw new TransactionError(TRANSACTION_ERROR_CODES.FORBIDDEN);
+  }
+
+  return {
+    batchId: row.batch_id,
+    transactionId: row.transaction_id,
+    batchQuantity: Number(row.batch_quantity),
+  };
+}
+
 export async function listBatchesForItem(
   supabase: SupabaseClient,
   itemId: string,
@@ -230,6 +274,9 @@ function mapRpcError(error: PostgrestError): TransactionError {
   }
   if (msg.includes("INSUFFICIENT_STOCK")) {
     return new TransactionError(TRANSACTION_ERROR_CODES.INSUFFICIENT_STOCK);
+  }
+  if (msg.includes("CONFLICT")) {
+    return new TransactionError(TRANSACTION_ERROR_CODES.CONFLICT);
   }
   return new TransactionError(TRANSACTION_ERROR_CODES.FORBIDDEN, msg);
 }

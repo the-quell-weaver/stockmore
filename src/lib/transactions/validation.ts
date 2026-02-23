@@ -24,6 +24,13 @@ export type AddInboundToBatchInput = {
   idempotencyKey?: string | null;
 };
 
+export type AdjustBatchQuantityInput = {
+  batchId: string;
+  actualQuantity: number;
+  note?: string | null;
+  idempotencyKey?: string | null;
+};
+
 export function validateConsumeFromBatchInput(
   input: ConsumeFromBatchInput,
 ): ConsumeFromBatchInput {
@@ -60,6 +67,17 @@ export function validateAddInboundToBatchInput(
   };
 }
 
+export function validateAdjustBatchQuantityInput(
+  input: AdjustBatchQuantityInput,
+): AdjustBatchQuantityInput {
+  return {
+    batchId: validateId(input.batchId),
+    actualQuantity: validateNonNegativeDecimal(input.actualQuantity),
+    note: normalizeOptionalText(input.note),
+    idempotencyKey: normalizeOptionalText(input.idempotencyKey),
+  };
+}
+
 function validateId(raw: string): string {
   const value = raw?.trim() ?? "";
   if (!value) {
@@ -77,6 +95,14 @@ function validateQuantity(raw: number): number {
 
 function validateDecimalQuantity(raw: number): number {
   if (!Number.isFinite(raw) || raw <= 0) {
+    throw new TransactionError(TRANSACTION_ERROR_CODES.QUANTITY_INVALID);
+  }
+  return raw;
+}
+
+// Allows 0 (adjustment to zero is valid); rejects negative and non-finite values.
+function validateNonNegativeDecimal(raw: number): number {
+  if (!Number.isFinite(raw) || raw < 0) {
     throw new TransactionError(TRANSACTION_ERROR_CODES.QUANTITY_INVALID);
   }
   return raw;

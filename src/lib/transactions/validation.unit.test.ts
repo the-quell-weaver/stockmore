@@ -5,6 +5,7 @@ import {
   validateConsumeFromBatchInput,
   validateCreateInboundBatchInput,
   validateAddInboundToBatchInput,
+  validateAdjustBatchQuantityInput,
 } from "@/lib/transactions/validation";
 
 const VALID_ITEM_ID = "00000000-0000-0000-0000-000000000001";
@@ -264,5 +265,117 @@ describe("validateAddInboundToBatchInput", () => {
     expect(() =>
       validateAddInboundToBatchInput({ batchId: VALID_BATCH_ID, quantity: -5 }),
     ).toThrow(expect.objectContaining({ code: TRANSACTION_ERROR_CODES.QUANTITY_INVALID }));
+  });
+});
+
+describe("validateAdjustBatchQuantityInput", () => {
+  const VALID_BATCH_ID = "00000000-0000-0000-0000-000000000002";
+
+  it("accepts actualQuantity=0 (adjust to zero is valid)", () => {
+    const result = validateAdjustBatchQuantityInput({
+      batchId: VALID_BATCH_ID,
+      actualQuantity: 0,
+    });
+    expect(result.batchId).toBe(VALID_BATCH_ID);
+    expect(result.actualQuantity).toBe(0);
+    expect(result.note).toBeNull();
+    expect(result.idempotencyKey).toBeNull();
+  });
+
+  it("accepts positive integer actualQuantity", () => {
+    const result = validateAdjustBatchQuantityInput({
+      batchId: VALID_BATCH_ID,
+      actualQuantity: 8,
+    });
+    expect(result.actualQuantity).toBe(8);
+  });
+
+  it("accepts decimal actualQuantity", () => {
+    const result = validateAdjustBatchQuantityInput({
+      batchId: VALID_BATCH_ID,
+      actualQuantity: 4.5,
+    });
+    expect(result.actualQuantity).toBe(4.5);
+  });
+
+  it("accepts small decimal actualQuantity", () => {
+    const result = validateAdjustBatchQuantityInput({
+      batchId: VALID_BATCH_ID,
+      actualQuantity: 0.001,
+    });
+    expect(result.actualQuantity).toBe(0.001);
+  });
+
+  it("rejects negative actualQuantity", () => {
+    expect(() =>
+      validateAdjustBatchQuantityInput({ batchId: VALID_BATCH_ID, actualQuantity: -1 }),
+    ).toThrow(expect.objectContaining({ code: TRANSACTION_ERROR_CODES.QUANTITY_INVALID }));
+  });
+
+  it("rejects NaN actualQuantity", () => {
+    expect(() =>
+      validateAdjustBatchQuantityInput({ batchId: VALID_BATCH_ID, actualQuantity: NaN }),
+    ).toThrow(expect.objectContaining({ code: TRANSACTION_ERROR_CODES.QUANTITY_INVALID }));
+  });
+
+  it("rejects Infinity actualQuantity", () => {
+    expect(() =>
+      validateAdjustBatchQuantityInput({ batchId: VALID_BATCH_ID, actualQuantity: Infinity }),
+    ).toThrow(expect.objectContaining({ code: TRANSACTION_ERROR_CODES.QUANTITY_INVALID }));
+  });
+
+  it("rejects empty batchId", () => {
+    expect(() =>
+      validateAdjustBatchQuantityInput({ batchId: "", actualQuantity: 5 }),
+    ).toThrow(expect.objectContaining({ code: TRANSACTION_ERROR_CODES.FORBIDDEN }));
+  });
+
+  it("rejects whitespace-only batchId", () => {
+    expect(() =>
+      validateAdjustBatchQuantityInput({ batchId: "   ", actualQuantity: 5 }),
+    ).toThrow(expect.objectContaining({ code: TRANSACTION_ERROR_CODES.FORBIDDEN }));
+  });
+
+  it("normalizes empty note to null", () => {
+    const result = validateAdjustBatchQuantityInput({
+      batchId: VALID_BATCH_ID,
+      actualQuantity: 5,
+      note: "",
+    });
+    expect(result.note).toBeNull();
+  });
+
+  it("normalizes whitespace-only idempotencyKey to null", () => {
+    const result = validateAdjustBatchQuantityInput({
+      batchId: VALID_BATCH_ID,
+      actualQuantity: 5,
+      idempotencyKey: "  ",
+    });
+    expect(result.idempotencyKey).toBeNull();
+  });
+
+  it("preserves non-empty optional fields", () => {
+    const result = validateAdjustBatchQuantityInput({
+      batchId: VALID_BATCH_ID,
+      actualQuantity: 8,
+      note: "inventory recount",
+      idempotencyKey: "key-abc-123",
+    });
+    expect(result.note).toBe("inventory recount");
+    expect(result.idempotencyKey).toBe("key-abc-123");
+  });
+
+  // delta calculation: ensure 0 is distinct from positive (both valid for adjustment)
+  it("distinguishes actualQuantity=0 from undefined (both valid but semantically different)", () => {
+    const resultZero = validateAdjustBatchQuantityInput({
+      batchId: VALID_BATCH_ID,
+      actualQuantity: 0,
+    });
+    const resultPositive = validateAdjustBatchQuantityInput({
+      batchId: VALID_BATCH_ID,
+      actualQuantity: 10,
+    });
+    expect(resultZero.actualQuantity).toBe(0);
+    expect(resultPositive.actualQuantity).toBe(10);
   });
 });
