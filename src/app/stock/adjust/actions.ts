@@ -8,7 +8,10 @@ import { adjustBatchQuantity } from "@/lib/transactions/service";
 import { createClient } from "@/lib/supabase/server";
 
 function parseNonNegativeDecimal(value: FormDataEntryValue | null): number {
-  const n = Number(typeof value === "string" ? value.trim() : "");
+  if (typeof value !== "string") return NaN;
+  const trimmed = value.trim();
+  if (trimmed.length === 0) return NaN;
+  const n = Number(trimmed);
   return Number.isFinite(n) && n >= 0 ? n : NaN;
 }
 
