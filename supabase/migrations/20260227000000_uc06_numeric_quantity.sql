@@ -17,7 +17,10 @@ alter table public.transactions
 -- ─────────────────────────────────────────────────────────────────────────────
 -- 2. Re-create create_inbound_batch with numeric return type
 --    (logic unchanged; only internal variable + return type updated)
+--    Must DROP first: Postgres forbids CREATE OR REPLACE to change return type.
 -- ─────────────────────────────────────────────────────────────────────────────
+
+drop function if exists public.create_inbound_batch(uuid, integer, date, uuid, uuid, text, text, text);
 
 create or replace function public.create_inbound_batch(
   p_item_id             uuid,
@@ -123,7 +126,10 @@ $$;
 -- ─────────────────────────────────────────────────────────────────────────────
 -- 3. Re-create add_inbound_to_batch with numeric return type
 --    (logic unchanged; only internal variables + return type updated)
+--    Must DROP first: Postgres forbids CREATE OR REPLACE to change return type.
 -- ─────────────────────────────────────────────────────────────────────────────
+
+drop function if exists public.add_inbound_to_batch(uuid, integer, text, text, text);
 
 create or replace function public.add_inbound_to_batch(
   p_batch_id        uuid,
