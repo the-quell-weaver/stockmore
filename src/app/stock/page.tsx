@@ -8,7 +8,7 @@ import { createClient } from "@/lib/supabase/server";
 import { listStockBatches } from "@/lib/transactions/service";
 import { StockSearch } from "@/components/stock-search";
 
-type StockSearchParams = { q?: string };
+type StockSearchParams = { q?: string | string[] };
 
 type StockPageProps = {
   searchParams: Promise<StockSearchParams>;
@@ -19,7 +19,8 @@ async function StockContent({
 }: {
   searchParams: Promise<StockSearchParams>;
 }) {
-  const { q } = await searchParams;
+  const rawParams = await searchParams;
+  const q = Array.isArray(rawParams.q) ? rawParams.q[0] : rawParams.q;
   const supabase = await createClient();
   await requireUser(supabase, "/stock");
 
@@ -33,7 +34,7 @@ async function StockContent({
 
   const hasItems = items.length > 0;
   const hasBatches = batches.length > 0;
-  const isFiltered = Boolean(q && q.trim());
+  const isFiltered = Boolean(q?.trim());
 
   return (
     <div className="mx-auto w-full max-w-xl p-4 md:p-6">

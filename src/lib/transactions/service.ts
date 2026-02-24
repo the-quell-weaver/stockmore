@@ -310,13 +310,6 @@ type BatchWithRefsRow = {
   tags: { name: string } | null;
 };
 
-function compareNullableDates(a: string | null, b: string | null): number {
-  if (a === null && b === null) return 0;
-  if (a === null) return 1;
-  if (b === null) return -1;
-  return a < b ? -1 : a > b ? 1 : 0;
-}
-
 export async function listStockBatches(
   supabase: SupabaseClient,
   input?: ListStockBatchesInput,
@@ -331,6 +324,9 @@ export async function listStockBatches(
     )
     .eq("org_id", membership.org_id)
     .eq("items.is_deleted", false)
+    .order("name", { referencedTable: "items", ascending: true })
+    .order("expiry_date", { ascending: true, nullsFirst: false })
+    .order("created_at", { ascending: true })
     .limit(validated.limit);
 
   if (validated.q) {
@@ -345,7 +341,7 @@ export async function listStockBatches(
 
   const rows = (data ?? []) as unknown as BatchWithRefsRow[];
 
-  const mapped: BatchWithRefs[] = rows
+  return rows
     .filter((row) => row.items !== null)
     .map((row) => ({
       id: row.id,
@@ -363,14 +359,4 @@ export async function listStockBatches(
       storageLocationName: row.storage_locations?.name ?? null,
       tagName: row.tags?.name ?? null,
     }));
-
-  mapped.sort((a, b) => {
-    const nameOrder = a.itemName.localeCompare(b.itemName, "zh-Hant");
-    if (nameOrder !== 0) return nameOrder;
-    const dateOrder = compareNullableDates(a.expiryDate, b.expiryDate);
-    if (dateOrder !== 0) return dateOrder;
-    return a.createdAt < b.createdAt ? -1 : a.createdAt > b.createdAt ? 1 : 0;
-  });
-
-  return mapped;
 }
