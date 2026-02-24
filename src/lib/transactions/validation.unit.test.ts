@@ -6,6 +6,7 @@ import {
   validateCreateInboundBatchInput,
   validateAddInboundToBatchInput,
   validateAdjustBatchQuantityInput,
+  validateListStockBatchesInput,
 } from "@/lib/transactions/validation";
 
 const VALID_ITEM_ID = "00000000-0000-0000-0000-000000000001";
@@ -377,5 +378,94 @@ describe("validateAdjustBatchQuantityInput", () => {
     });
     expect(resultZero.actualQuantity).toBe(0);
     expect(resultPositive.actualQuantity).toBe(10);
+  });
+});
+
+describe("validateListStockBatchesInput", () => {
+  it("accepts empty input, returns defaults", () => {
+    const result = validateListStockBatchesInput({});
+    expect(result.q).toBeNull();
+    expect(result.limit).toBe(50);
+    expect(result.cursor).toBeNull();
+  });
+
+  it("accepts q=undefined", () => {
+    const result = validateListStockBatchesInput({ q: undefined });
+    expect(result.q).toBeNull();
+  });
+
+  it("trims and returns null for q=empty string", () => {
+    const result = validateListStockBatchesInput({ q: "" });
+    expect(result.q).toBeNull();
+  });
+
+  it("trims and returns null for q=whitespace only", () => {
+    const result = validateListStockBatchesInput({ q: "   " });
+    expect(result.q).toBeNull();
+  });
+
+  it("accepts q with valid length (200 chars)", () => {
+    const q = "a".repeat(200);
+    const result = validateListStockBatchesInput({ q });
+    expect(result.q).toBe(q);
+  });
+
+  it("rejects q longer than 200 chars after trim", () => {
+    const q = "a".repeat(201);
+    expect(() => validateListStockBatchesInput({ q })).toThrow(
+      expect.objectContaining({ code: TRANSACTION_ERROR_CODES.INVALID_QUERY }),
+    );
+  });
+
+  it("trims q before validating length", () => {
+    const q = " " + "a".repeat(200) + " ";
+    // trimmed = 200 chars → valid
+    const result = validateListStockBatchesInput({ q });
+    expect(result.q).toBe("a".repeat(200));
+  });
+
+  it("limit=undefined defaults to 50", () => {
+    const result = validateListStockBatchesInput({});
+    expect(result.limit).toBe(50);
+  });
+
+  it("limit=500 is clamped to 200", () => {
+    const result = validateListStockBatchesInput({ limit: 500 });
+    expect(result.limit).toBe(200);
+  });
+
+  it("limit=0 is clamped to 1", () => {
+    const result = validateListStockBatchesInput({ limit: 0 });
+    expect(result.limit).toBe(1);
+  });
+
+  it("limit=-1 is clamped to 1", () => {
+    const result = validateListStockBatchesInput({ limit: -1 });
+    expect(result.limit).toBe(1);
+  });
+
+  it("limit=50 is accepted as-is", () => {
+    const result = validateListStockBatchesInput({ limit: 50 });
+    expect(result.limit).toBe(50);
+  });
+
+  it("limit=200 is accepted as-is (max)", () => {
+    const result = validateListStockBatchesInput({ limit: 200 });
+    expect(result.limit).toBe(200);
+  });
+
+  it("limit=1 is accepted as-is (min)", () => {
+    const result = validateListStockBatchesInput({ limit: 1 });
+    expect(result.limit).toBe(1);
+  });
+
+  it("cursor is passed through when provided", () => {
+    const result = validateListStockBatchesInput({ cursor: "some-cursor-value" });
+    expect(result.cursor).toBe("some-cursor-value");
+  });
+
+  it("cursor=null returns null", () => {
+    const result = validateListStockBatchesInput({ cursor: null });
+    expect(result.cursor).toBeNull();
   });
 });

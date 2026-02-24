@@ -5,6 +5,7 @@ export const TRANSACTION_ERROR_CODES = {
   INSUFFICIENT_STOCK: "INSUFFICIENT_STOCK",
   FORBIDDEN: "FORBIDDEN",
   CONFLICT: "CONFLICT",
+  INVALID_QUERY: "INVALID_QUERY",
 } as const;
 
 export type TransactionErrorCode =

@@ -6,10 +6,12 @@ import {
   type CreateInboundBatchInput,
   type AddInboundToBatchInput,
   type AdjustBatchQuantityInput,
+  type ListStockBatchesInput,
   validateConsumeFromBatchInput,
   validateCreateInboundBatchInput,
   validateAddInboundToBatchInput,
   validateAdjustBatchQuantityInput,
+  validateListStockBatchesInput,
 } from "@/lib/transactions/validation";
 
 type Membership = {
@@ -279,4 +281,82 @@ function mapRpcError(error: PostgrestError): TransactionError {
     return new TransactionError(TRANSACTION_ERROR_CODES.CONFLICT);
   }
   return new TransactionError(TRANSACTION_ERROR_CODES.FORBIDDEN, msg);
+}
+
+// ---------------------------------------------------------------------------
+// Stock View
+// ---------------------------------------------------------------------------
+
+export type BatchWithRefs = Batch & {
+  itemName: string;
+  itemUnit: string;
+  storageLocationName: string | null;
+  tagName: string | null;
+};
+
+type BatchWithRefsRow = {
+  id: string;
+  org_id: string;
+  warehouse_id: string;
+  item_id: string;
+  quantity: number;
+  expiry_date: string | null;
+  storage_location_id: string | null;
+  tag_id: string | null;
+  created_at: string;
+  updated_at: string;
+  items: { name: string; unit: string } | null;
+  storage_locations: { name: string } | null;
+  tags: { name: string } | null;
+};
+
+export async function listStockBatches(
+  supabase: SupabaseClient,
+  input?: ListStockBatchesInput,
+): Promise<BatchWithRefs[]> {
+  const membership = await getMembership(supabase);
+  const validated = validateListStockBatchesInput(input ?? {});
+
+  let query = supabase
+    .from("batches")
+    .select(
+      "id, org_id, warehouse_id, item_id, quantity, expiry_date, storage_location_id, tag_id, created_at, updated_at, items!inner(name, unit), storage_locations(name), tags(name)",
+    )
+    .eq("org_id", membership.org_id)
+    .eq("items.is_deleted", false)
+    .order("name", { referencedTable: "items", ascending: true })
+    .order("expiry_date", { ascending: true, nullsFirst: false })
+    .order("created_at", { ascending: true })
+    .limit(validated.limit);
+
+  if (validated.q) {
+    query = query.ilike("items.name", `%${validated.q}%`);
+  }
+
+  const { data, error } = await query;
+
+  if (error) {
+    throw mapRpcError(error);
+  }
+
+  const rows = (data ?? []) as unknown as BatchWithRefsRow[];
+
+  return rows
+    .filter((row) => row.items !== null)
+    .map((row) => ({
+      id: row.id,
+      orgId: row.org_id,
+      warehouseId: row.warehouse_id,
+      itemId: row.item_id,
+      quantity: Number(row.quantity),
+      expiryDate: row.expiry_date,
+      storageLocationId: row.storage_location_id,
+      tagId: row.tag_id,
+      createdAt: row.created_at,
+      updatedAt: row.updated_at,
+      itemName: row.items!.name,
+      itemUnit: row.items!.unit,
+      storageLocationName: row.storage_locations?.name ?? null,
+      tagName: row.tags?.name ?? null,
+    }));
 }
