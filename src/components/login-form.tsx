@@ -41,11 +41,16 @@ export function LoginForm({
     DEFAULT_NEXT_PATH,
   );
   const paramError = parseAuthErrorCode(searchParams.get("error"));
+  const hint = searchParams.get("hint");
   const debug = searchParams.get("debug");
   const paramErrorMessage = paramError
     ? getAuthErrorMessage(paramError)
     : null;
   const effectiveError = error ?? (showParamError ? paramErrorMessage : null);
+  const hintMessage =
+    hint === "existing_account"
+      ? "This email is already registered. Enter it below to receive a sign-in link."
+      : null;
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -124,6 +129,9 @@ export function LoginForm({
                   suppressHydrationWarning
                 />
               </div>
+              {hintMessage && !effectiveError && (
+                <p className="text-sm text-amber-600">{hintMessage}</p>
+              )}
               {effectiveError && (
                 <p className="text-sm text-red-500">
                   {effectiveError}
