@@ -40,7 +40,7 @@ export function SignUpForm({
     }
 
     try {
-      const { error } = await supabase.auth.signUp({
+      const { data, error } = await supabase.auth.signUp({
         email,
         password,
         options: {
@@ -48,6 +48,12 @@ export function SignUpForm({
         },
       });
       if (error) throw error;
+      if (!data.user) {
+        // Email is already registered. Redirect to login rather than showing
+        // a misleading "check your email" success page with no email sent.
+        router.push("/login?hint=existing_account");
+        return;
+      }
       router.push("/auth/sign-up-success");
     } catch (error: unknown) {
       setError(error instanceof Error ? error.message : "An error occurred");

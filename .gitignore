@@ -4,3 +4,6 @@ supabase/.temp/
 
 # Claude Code local settings (user-specific)
 .claude/settings.local.json
+
+# AI task temporary files
+.tasks/
