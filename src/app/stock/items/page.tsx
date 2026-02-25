@@ -58,27 +58,9 @@ async function ItemsContent({
             品名
             <input name="name" required className="h-10 rounded border px-3" />
           </label>
-          <div className="grid gap-3 md:grid-cols-2">
-            <label className="grid gap-1 text-sm">
-              單位
-              <input name="unit" required className="h-10 rounded border px-3" defaultValue="個" />
-            </label>
-            <label className="grid gap-1 text-sm">
-              最低庫存
-              <input
-                name="minStock"
-                type="number"
-                min={0}
-                step="0.001"
-                required
-                defaultValue="0"
-                className="h-10 rounded border px-3"
-              />
-            </label>
-          </div>
           <label className="grid gap-1 text-sm">
-            備註
-            <textarea name="note" className="min-h-20 rounded border px-3 py-2" />
+            單位
+            <input name="unit" required className="h-10 rounded border px-3" defaultValue="個" />
           </label>
           <label className="grid gap-1 text-sm">
             預設標籤
@@ -127,31 +109,9 @@ async function ItemsContent({
                     品名
                     <input name="name" required defaultValue={item.name} className="h-10 rounded border px-3" />
                   </label>
-                  <div className="grid gap-3 md:grid-cols-2">
-                    <label className="grid gap-1 text-sm">
-                      單位
-                      <input name="unit" required defaultValue={item.unit} className="h-10 rounded border px-3" />
-                    </label>
-                    <label className="grid gap-1 text-sm">
-                      最低庫存
-                      <input
-                        name="minStock"
-                        type="number"
-                        min={0}
-                        step="0.001"
-                        required
-                        defaultValue={item.minStock}
-                        className="h-10 rounded border px-3"
-                      />
-                    </label>
-                  </div>
                   <label className="grid gap-1 text-sm">
-                    備註
-                    <textarea
-                      name="note"
-                      defaultValue={item.note ?? ""}
-                      className="min-h-20 rounded border px-3 py-2"
-                    />
+                    單位
+                    <input name="unit" required defaultValue={item.unit} className="h-10 rounded border px-3" />
                   </label>
                   <label className="grid gap-1 text-sm">
                     預設標籤
