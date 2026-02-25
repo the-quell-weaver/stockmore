@@ -7,16 +7,6 @@ import { ItemError } from "@/lib/items/errors";
 import { createItem, updateItem } from "@/lib/items/service";
 import { createClient } from "@/lib/supabase/server";
 
-function parseNumber(value: FormDataEntryValue | null): number {
-  return Number(typeof value === "string" ? value : "");
-}
-
-function parseOptionalString(value: FormDataEntryValue | null): string | null {
-  if (typeof value !== "string") return null;
-  const normalized = value.trim();
-  return normalized.length > 0 ? normalized : null;
-}
-
 function parseOptionalStringList(
   formData: FormData,
   key: string,
@@ -47,8 +37,7 @@ export async function createItemAction(formData: FormData) {
     await createItem(supabase, {
       name: String(formData.get("name") ?? ""),
       unit: String(formData.get("unit") ?? ""),
-      minStock: parseNumber(formData.get("minStock")),
-      note: parseOptionalString(formData.get("note")),
+      minStock: 0,
       defaultTagIds: parseOptionalStringList(
         formData,
         "defaultTagIds",
@@ -78,8 +67,6 @@ export async function updateItemAction(formData: FormData) {
     await updateItem(supabase, itemId, {
       name: String(formData.get("name") ?? ""),
       unit: String(formData.get("unit") ?? ""),
-      minStock: parseNumber(formData.get("minStock")),
-      note: parseOptionalString(formData.get("note")),
       defaultTagIds: parseOptionalStringList(
         formData,
         "defaultTagIds",
