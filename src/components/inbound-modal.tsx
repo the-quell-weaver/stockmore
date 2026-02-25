@@ -50,6 +50,7 @@ export function InboundModal({
     if (open) {
       setIdempotencyKey(crypto.randomUUID());
       setError(null);
+      setExistingBatches([]);
     }
   }, [open]);
 

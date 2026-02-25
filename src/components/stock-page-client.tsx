@@ -77,6 +77,11 @@ export function StockPageClient({
   const hasBatches = batches.length > 0;
   const isFiltered = Boolean(q?.trim());
 
+  const groupedItemIds = new Set(groups.map((g) => g.itemId));
+  const zeroStockItems = !isFiltered
+    ? items.filter((item) => !groupedItemIds.has(item.id) && !item.isDeleted)
+    : [];
+
   return (
     <div className="mx-auto w-full max-w-xl p-4 md:p-6">
       {/* Header */}
@@ -109,13 +114,6 @@ export function StockPageClient({
         </div>
       )}
 
-      {!hasBatches && hasItems && !isFiltered && (
-        <div className="rounded border border-dashed p-8 text-center">
-          <p className="text-sm text-muted-foreground">尚無庫存</p>
-          <p className="mt-1 text-xs text-muted-foreground">執行入庫後批次將顯示於此</p>
-        </div>
-      )}
-
       {!hasBatches && isFiltered && (
         <div className="rounded border border-dashed p-8 text-center">
           <p className="text-sm text-muted-foreground">
@@ -124,7 +122,7 @@ export function StockPageClient({
         </div>
       )}
 
-      {hasBatches && (
+      {(hasBatches || zeroStockItems.length > 0) && (
         <ul className="space-y-3">
           {groups.map((group) => (
             <li key={group.itemId} className="rounded border">
@@ -189,6 +187,26 @@ export function StockPageClient({
                   );
                 })}
               </ul>
+            </li>
+          ))}
+
+          {zeroStockItems.map((item) => (
+            <li key={item.id} className="rounded border">
+              <div className="flex items-center justify-between gap-2 px-3 py-2">
+                <span className="font-medium text-muted-foreground">{item.name}</span>
+                <button
+                  onClick={() =>
+                    setInboundTarget({
+                      itemId: item.id,
+                      itemName: item.name,
+                      itemUnit: item.unit,
+                    })
+                  }
+                  className="inline-flex h-7 items-center rounded bg-primary px-3 text-xs text-primary-foreground"
+                >
+                  入庫
+                </button>
+              </div>
             </li>
           ))}
         </ul>
