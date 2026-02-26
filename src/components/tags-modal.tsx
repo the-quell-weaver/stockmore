@@ -1,8 +1,10 @@
 "use client";
 
 import { useEffect, useState, useTransition } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 
 import type { Tag } from "@/lib/tags/service";
+import { queryKeys } from "@/lib/query-keys";
 import {
   createTagModalAction,
   renameTagModalAction,
@@ -22,6 +24,7 @@ type TagsModalProps = {
 };
 
 export function TagsModal({ open, tags, onClose, onSuccess }: TagsModalProps) {
+  const queryClient = useQueryClient();
   const [localTags, setLocalTags] = useState<Tag[]>(tags);
   const [error, setError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
@@ -43,6 +46,7 @@ export function TagsModal({ open, tags, onClose, onSuccess }: TagsModalProps) {
       const result = await createTagModalAction(fd);
       if (result.ok) {
         form.reset();
+        queryClient.invalidateQueries({ queryKey: queryKeys.tags });
         onSuccess();
       } else {
         setError(result.error);
@@ -65,6 +69,7 @@ export function TagsModal({ open, tags, onClose, onSuccess }: TagsModalProps) {
               : tag,
           ),
         );
+        queryClient.invalidateQueries({ queryKey: queryKeys.tags });
         onSuccess();
       } else {
         setError(result.error);

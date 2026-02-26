@@ -1,8 +1,10 @@
 "use client";
 
 import { useEffect, useState, useTransition } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 
 import type { StorageLocation } from "@/lib/storage-locations/service";
+import { queryKeys } from "@/lib/query-keys";
 import {
   createLocationModalAction,
   renameLocationModalAction,
@@ -27,6 +29,7 @@ export function LocationsModal({
   onClose,
   onSuccess,
 }: LocationsModalProps) {
+  const queryClient = useQueryClient();
   const [localLocations, setLocalLocations] = useState<StorageLocation[]>(locations);
   const [error, setError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
@@ -48,6 +51,7 @@ export function LocationsModal({
       const result = await createLocationModalAction(fd);
       if (result.ok) {
         form.reset();
+        queryClient.invalidateQueries({ queryKey: queryKeys.locations });
         onSuccess();
       } else {
         setError(result.error);
@@ -70,6 +74,7 @@ export function LocationsModal({
               : loc,
           ),
         );
+        queryClient.invalidateQueries({ queryKey: queryKeys.locations });
         onSuccess();
       } else {
         setError(result.error);

@@ -2,10 +2,7 @@ import { Suspense } from "react";
 
 import { getAuthContext } from "@/lib/auth/context";
 import { requireUser } from "@/lib/auth/require-user";
-import { listItems } from "@/lib/items/service";
-import { listStorageLocations } from "@/lib/storage-locations/service";
 import { createClient } from "@/lib/supabase/server";
-import { listTags } from "@/lib/tags/service";
 import { listStockBatches } from "@/lib/transactions/service";
 import { StockPageClient } from "@/components/stock-page-client";
 
@@ -28,19 +25,11 @@ async function StockContent({
   const context = await getAuthContext(supabase);
   const warehouseName = context?.warehouseName ?? "—";
 
-  const [batches, items, locations, tags] = await Promise.all([
-    listStockBatches(supabase, { q }),
-    listItems(supabase),
-    listStorageLocations(supabase),
-    listTags(supabase),
-  ]);
+  const batches = await listStockBatches(supabase, { q });
 
   return (
     <StockPageClient
       batches={batches}
-      items={items}
-      locations={locations}
-      tags={tags}
       q={q}
       warehouseName={warehouseName}
     />
