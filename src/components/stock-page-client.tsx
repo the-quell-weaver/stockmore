@@ -1,8 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
-import { useQuery } from "@tanstack/react-query";
+import { useSearchParams } from "next/navigation";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 
 import type { BatchWithRefs } from "@/lib/transactions/service";
 import type { Item } from "@/lib/items/service";
@@ -46,18 +46,23 @@ function groupBatches(batches: BatchWithRefs[]): ItemGroup[] {
 }
 
 type StockPageClientProps = {
-  batches: BatchWithRefs[];
-  q?: string;
   warehouseName: string;
 };
 
-export function StockPageClient({
-  batches,
-  q,
-  warehouseName,
-}: StockPageClientProps) {
-  const router = useRouter();
+export function StockPageClient({ warehouseName }: StockPageClientProps) {
+  const searchParams = useSearchParams();
+  const q = searchParams.get("q") ?? undefined;
+  const queryClient = useQueryClient();
 
+  const { data: batches = [], isRefetching: isBatchesRefetching } = useQuery<BatchWithRefs[]>({
+    queryKey: queryKeys.batches(q),
+    queryFn: () =>
+      fetch(`/api/stock/batches${q ? `?q=${encodeURIComponent(q)}` : ""}`)
+        .then((r) => {
+          if (!r.ok) throw new Error(r.statusText);
+          return r.json();
+        }),
+  });
   const { data: locations = [] } = useQuery<StorageLocation[]>({
     queryKey: queryKeys.locations,
     queryFn: () =>
@@ -90,7 +95,7 @@ export function StockPageClient({
   const [tagsOpen, setTagsOpen] = useState(false);
 
   function handleSuccess() {
-    router.refresh();
+    queryClient.invalidateQueries({ queryKey: ["stock", "batches"] });
   }
 
   const groups = groupBatches(batches);
@@ -144,7 +149,7 @@ export function StockPageClient({
       )}
 
       {(hasBatches || zeroStockItems.length > 0) && (
-        <ul className="space-y-3">
+        <ul className={`space-y-3 transition-opacity duration-200 ${isBatchesRefetching ? "opacity-60" : ""}`}>
           {groups.map((group) => (
             <li key={group.itemId} className="rounded border">
               {/* Item header row */}
