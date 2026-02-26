@@ -2,11 +2,13 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { useQuery } from "@tanstack/react-query";
 
 import type { BatchWithRefs } from "@/lib/transactions/service";
 import type { Item } from "@/lib/items/service";
 import type { StorageLocation } from "@/lib/storage-locations/service";
 import type { Tag } from "@/lib/tags/service";
+import { queryKeys } from "@/lib/query-keys";
 import { StockSearch } from "@/components/stock-search";
 import { HamburgerMenu } from "@/components/hamburger-menu";
 import { InboundModal } from "@/components/inbound-modal";
@@ -45,22 +47,29 @@ function groupBatches(batches: BatchWithRefs[]): ItemGroup[] {
 
 type StockPageClientProps = {
   batches: BatchWithRefs[];
-  items: Item[];
-  locations: StorageLocation[];
-  tags: Tag[];
   q?: string;
   warehouseName: string;
 };
 
 export function StockPageClient({
   batches,
-  items,
-  locations,
-  tags,
   q,
   warehouseName,
 }: StockPageClientProps) {
   const router = useRouter();
+
+  const { data: locations = [] } = useQuery<StorageLocation[]>({
+    queryKey: queryKeys.locations,
+    queryFn: () => fetch("/api/stock/locations").then((r) => r.json()),
+  });
+  const { data: tags = [] } = useQuery<Tag[]>({
+    queryKey: queryKeys.tags,
+    queryFn: () => fetch("/api/stock/tags").then((r) => r.json()),
+  });
+  const { data: items = [] } = useQuery<Item[]>({
+    queryKey: queryKeys.items,
+    queryFn: () => fetch("/api/stock/items").then((r) => r.json()),
+  });
 
   const [inboundTarget, setInboundTarget] = useState<InboundTarget | null>(null);
   const [consumeTarget, setConsumeTarget] = useState<BatchWithRefs | null>(null);
