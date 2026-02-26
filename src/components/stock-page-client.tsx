@@ -54,7 +54,7 @@ export function StockPageClient({ warehouseName }: StockPageClientProps) {
   const q = searchParams.get("q") ?? undefined;
   const queryClient = useQueryClient();
 
-  const { data: batches = [], isRefetching: isBatchesRefetching } = useQuery<BatchWithRefs[]>({
+  const { data: batches = [], isPending: batchesPending, isRefetching: isBatchesRefetching } = useQuery<BatchWithRefs[]>({
     queryKey: queryKeys.batches(q),
     queryFn: () =>
       fetch(`/api/stock/batches${q ? `?q=${encodeURIComponent(q)}` : ""}`)
@@ -104,7 +104,7 @@ export function StockPageClient({ warehouseName }: StockPageClientProps) {
   const isFiltered = Boolean(q?.trim());
 
   const groupedItemIds = new Set(groups.map((g) => g.itemId));
-  const zeroStockItems = !isFiltered
+  const zeroStockItems = !isFiltered && !batchesPending
     ? items.filter((item) => !groupedItemIds.has(item.id) && !item.isDeleted)
     : [];
 
@@ -127,7 +127,7 @@ export function StockPageClient({ warehouseName }: StockPageClientProps) {
         <StockSearch defaultQ={q} />
       </div>
 
-      {!hasBatches && !hasItems && (
+      {!batchesPending && !hasBatches && !hasItems && (
         <div className="rounded border border-dashed p-8 text-center">
           <p className="text-sm text-muted-foreground">尚無庫存</p>
           <p className="mt-1 text-xs text-muted-foreground">請先建立品項，再進行入庫</p>
@@ -140,7 +140,7 @@ export function StockPageClient({ warehouseName }: StockPageClientProps) {
         </div>
       )}
 
-      {!hasBatches && isFiltered && (
+      {!batchesPending && !hasBatches && isFiltered && (
         <div className="rounded border border-dashed p-8 text-center">
           <p className="text-sm text-muted-foreground">
             找不到符合「{q}」的批次
