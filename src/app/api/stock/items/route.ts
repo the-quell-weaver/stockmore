@@ -9,6 +9,6 @@ export async function GET() {
     const items = await listItems(supabase);
     return NextResponse.json(items);
   } catch {
-    return NextResponse.json([], { status: 401 });
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 }

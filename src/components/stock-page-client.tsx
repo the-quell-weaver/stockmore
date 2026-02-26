@@ -60,15 +60,27 @@ export function StockPageClient({
 
   const { data: locations = [] } = useQuery<StorageLocation[]>({
     queryKey: queryKeys.locations,
-    queryFn: () => fetch("/api/stock/locations").then((r) => r.json()),
+    queryFn: () =>
+      fetch("/api/stock/locations").then((r) => {
+        if (!r.ok) throw new Error(r.statusText);
+        return r.json();
+      }),
   });
   const { data: tags = [] } = useQuery<Tag[]>({
     queryKey: queryKeys.tags,
-    queryFn: () => fetch("/api/stock/tags").then((r) => r.json()),
+    queryFn: () =>
+      fetch("/api/stock/tags").then((r) => {
+        if (!r.ok) throw new Error(r.statusText);
+        return r.json();
+      }),
   });
   const { data: items = [] } = useQuery<Item[]>({
     queryKey: queryKeys.items,
-    queryFn: () => fetch("/api/stock/items").then((r) => r.json()),
+    queryFn: () =>
+      fetch("/api/stock/items").then((r) => {
+        if (!r.ok) throw new Error(r.statusText);
+        return r.json();
+      }),
   });
 
   const [inboundTarget, setInboundTarget] = useState<InboundTarget | null>(null);

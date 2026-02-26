@@ -9,6 +9,6 @@ export async function GET() {
     const locations = await listStorageLocations(supabase);
     return NextResponse.json(locations);
   } catch {
-    return NextResponse.json([], { status: 401 });
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 }
