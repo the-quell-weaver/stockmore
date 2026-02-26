@@ -4,6 +4,7 @@ import { useEffect, useState, useTransition } from "react";
 
 import type { BatchWithRefs } from "@/lib/transactions/service";
 import { adjustBatchQuantityModalAction } from "@/app/stock/adjust/modal-actions";
+import { startMark } from "@/lib/perf";
 import {
   Dialog,
   DialogContent,
@@ -36,6 +37,7 @@ export function AdjustModal({ open, batch, onClose, onSuccess }: AdjustModalProp
     e.preventDefault();
     const fd = new FormData(e.currentTarget);
     setError(null);
+    startMark("adjust");
     startTransition(async () => {
       const result = await adjustBatchQuantityModalAction(fd);
       if (result.ok) {
