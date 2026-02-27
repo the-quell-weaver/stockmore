@@ -1,8 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
-import { useQuery } from "@tanstack/react-query";
+import { useSearchParams } from "next/navigation";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 
 import type { BatchWithRefs } from "@/lib/transactions/service";
 import type { Item } from "@/lib/items/service";
@@ -46,18 +46,23 @@ function groupBatches(batches: BatchWithRefs[]): ItemGroup[] {
 }
 
 type StockPageClientProps = {
-  batches: BatchWithRefs[];
-  q?: string;
   warehouseName: string;
 };
 
-export function StockPageClient({
-  batches,
-  q,
-  warehouseName,
-}: StockPageClientProps) {
-  const router = useRouter();
+export function StockPageClient({ warehouseName }: StockPageClientProps) {
+  const searchParams = useSearchParams();
+  const q = searchParams.get("q") ?? undefined;
+  const queryClient = useQueryClient();
 
+  const { data: batches = [], isPending: batchesPending, isRefetching: isBatchesRefetching } = useQuery<BatchWithRefs[]>({
+    queryKey: queryKeys.batches(q),
+    queryFn: () =>
+      fetch(`/api/stock/batches${q ? `?q=${encodeURIComponent(q)}` : ""}`)
+        .then((r) => {
+          if (!r.ok) throw new Error(r.statusText);
+          return r.json();
+        }),
+  });
   const { data: locations = [] } = useQuery<StorageLocation[]>({
     queryKey: queryKeys.locations,
     queryFn: () =>
@@ -90,7 +95,7 @@ export function StockPageClient({
   const [tagsOpen, setTagsOpen] = useState(false);
 
   function handleSuccess() {
-    router.refresh();
+    queryClient.invalidateQueries({ queryKey: ["stock", "batches"] });
   }
 
   const groups = groupBatches(batches);
@@ -99,7 +104,7 @@ export function StockPageClient({
   const isFiltered = Boolean(q?.trim());
 
   const groupedItemIds = new Set(groups.map((g) => g.itemId));
-  const zeroStockItems = !isFiltered
+  const zeroStockItems = !isFiltered && !batchesPending
     ? items.filter((item) => !groupedItemIds.has(item.id) && !item.isDeleted)
     : [];
 
@@ -122,7 +127,7 @@ export function StockPageClient({
         <StockSearch defaultQ={q} />
       </div>
 
-      {!hasBatches && !hasItems && (
+      {!batchesPending && !hasBatches && !hasItems && (
         <div className="rounded border border-dashed p-8 text-center">
           <p className="text-sm text-muted-foreground">尚無庫存</p>
           <p className="mt-1 text-xs text-muted-foreground">請先建立品項，再進行入庫</p>
@@ -135,7 +140,7 @@ export function StockPageClient({
         </div>
       )}
 
-      {!hasBatches && isFiltered && (
+      {!batchesPending && !hasBatches && isFiltered && (
         <div className="rounded border border-dashed p-8 text-center">
           <p className="text-sm text-muted-foreground">
             找不到符合「{q}」的批次
@@ -144,7 +149,7 @@ export function StockPageClient({
       )}
 
       {(hasBatches || zeroStockItems.length > 0) && (
-        <ul className="space-y-3">
+        <ul className={`space-y-3 transition-opacity duration-200 ${isBatchesRefetching ? "opacity-60" : ""}`}>
           {groups.map((group) => (
             <li key={group.itemId} className="rounded border">
               {/* Item header row */}

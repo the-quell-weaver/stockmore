@@ -7,3 +7,6 @@ supabase/.temp/
 
 # AI task temporary files
 .tasks/
+
+# Git worktrees
+.worktrees/
