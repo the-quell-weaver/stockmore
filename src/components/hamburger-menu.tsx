@@ -63,6 +63,13 @@ export function HamburgerMenu({
           >
             標籤管理
           </button>
+          <a
+            href="/api/calendar/expiry.ics"
+            download="prepstock-expiry.ics"
+            className="rounded px-3 py-2 text-sm hover:bg-accent"
+          >
+            匯出到期行事曆
+          </a>
           <hr className="my-2" />
           <button
             onClick={handleLogout}
