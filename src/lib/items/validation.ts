@@ -15,6 +15,7 @@ export type UpdateItemInput = {
   defaultTagIds?: string[] | null;
   note?: string | null;
   isDeleted?: boolean;
+  targetQuantity?: number | null;  // UC-11
 };
 
 export type ListItemsInput = {
@@ -52,6 +53,9 @@ export function validateUpdateItemInput(input: UpdateItemInput): UpdateItemInput
   }
   if (input.isDeleted !== undefined) {
     patch.isDeleted = input.isDeleted;
+  }
+  if (input.targetQuantity !== undefined) {
+    patch.targetQuantity = validateTargetQuantity(input.targetQuantity);
   }
 
   return patch;
@@ -92,6 +96,14 @@ function normalizeOptionalText(raw?: string | null): string | null {
   if (raw == null) return null;
   const value = raw.trim();
   return value.length > 0 ? value : null;
+}
+
+export function validateTargetQuantity(raw: number | null): number | null {
+  if (raw === null) return null;
+  if (!Number.isFinite(raw) || raw <= 0) {
+    throw new ItemError(ITEM_ERROR_CODES.TARGET_QUANTITY_INVALID);
+  }
+  return raw;
 }
 
 function normalizeOptionalIds(raw?: string[] | null): string[] | null {

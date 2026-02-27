@@ -4,6 +4,7 @@ import { ItemError, ITEM_ERROR_CODES } from "@/lib/items/errors";
 import {
   normalizeListQuery,
   validateCreateItemInput,
+  validateTargetQuantity,
   validateUpdateItemInput,
 } from "@/lib/items/validation";
 
@@ -64,5 +65,31 @@ describe("items validation", () => {
       includeDeleted: false,
     });
     expect(normalizeListQuery()).toEqual({ q: undefined, includeDeleted: false });
+  });
+});
+
+describe("validateTargetQuantity", () => {
+  it("accepts null (remove from plan)", () => {
+    expect(validateTargetQuantity(null)).toBeNull();
+  });
+
+  it("accepts positive integer", () => {
+    expect(validateTargetQuantity(10)).toBe(10);
+  });
+
+  it("accepts positive decimal", () => {
+    expect(validateTargetQuantity(2.5)).toBe(2.5);
+  });
+
+  it("rejects zero", () => {
+    expect(() => validateTargetQuantity(0)).toThrow("TARGET_QUANTITY_INVALID");
+  });
+
+  it("rejects negative", () => {
+    expect(() => validateTargetQuantity(-1)).toThrow("TARGET_QUANTITY_INVALID");
+  });
+
+  it("rejects NaN", () => {
+    expect(() => validateTargetQuantity(NaN)).toThrow("TARGET_QUANTITY_INVALID");
   });
 });

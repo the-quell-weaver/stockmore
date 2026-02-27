@@ -26,6 +26,7 @@ type ItemRow = {
   is_deleted: boolean;
   created_at: string;
   updated_at: string;
+  target_quantity: number | string | null;  // UC-11
 };
 
 export type Item = {
@@ -39,6 +40,7 @@ export type Item = {
   isDeleted: boolean;
   createdAt: string;
   updatedAt: string;
+  targetQuantity: number | null;  // UC-11
 };
 
 export async function listItems(
@@ -50,7 +52,7 @@ export async function listItems(
 
   let request = supabase
     .from("items")
-    .select("id, org_id, name, unit, min_stock, default_tag_id, note, is_deleted, created_at, updated_at")
+    .select("id, org_id, name, unit, min_stock, default_tag_id, note, is_deleted, created_at, updated_at, target_quantity")
     .eq("org_id", membership.org_id)
     .order("name", { ascending: true });
 
@@ -88,7 +90,7 @@ export async function createItem(
       created_by: userId,
       updated_by: userId,
     })
-    .select("id, org_id, name, unit, min_stock, default_tag_id, note, is_deleted, created_at, updated_at")
+    .select("id, org_id, name, unit, min_stock, default_tag_id, note, is_deleted, created_at, updated_at, target_quantity")
     .single();
 
   if (error) {
@@ -116,13 +118,14 @@ export async function updateItem(
   }
   if (validated.note !== undefined) payload.note = validated.note;
   if (validated.isDeleted !== undefined) payload.is_deleted = validated.isDeleted;
+  if (validated.targetQuantity !== undefined) payload.target_quantity = validated.targetQuantity;
 
   const { data, error } = await supabase
     .from("items")
     .update(payload)
     .eq("id", itemId)
     .eq("org_id", membership.org_id)
-    .select("id, org_id, name, unit, min_stock, default_tag_id, note, is_deleted, created_at, updated_at")
+    .select("id, org_id, name, unit, min_stock, default_tag_id, note, is_deleted, created_at, updated_at, target_quantity")
     .maybeSingle();
 
   if (error) {
@@ -189,6 +192,7 @@ function mapItemRow(row: ItemRow): Item {
     isDeleted: row.is_deleted,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
+    targetQuantity: row.target_quantity != null ? Number(row.target_quantity) : null,
   };
 }
 
