@@ -9,6 +9,7 @@ import type { Item } from "@/lib/items/service";
 import type { StorageLocation } from "@/lib/storage-locations/service";
 import type { Tag } from "@/lib/tags/service";
 import { queryKeys } from "@/lib/query-keys";
+import { endMark } from "@/lib/perf";
 import { StockSearch } from "@/components/stock-search";
 import { HamburgerMenu } from "@/components/hamburger-menu";
 import { InboundModal } from "@/components/inbound-modal";
@@ -94,7 +95,8 @@ export function StockPageClient({ warehouseName }: StockPageClientProps) {
   const [locationsOpen, setLocationsOpen] = useState(false);
   const [tagsOpen, setTagsOpen] = useState(false);
 
-  function handleSuccess() {
+  function handleSuccess(actionName?: string) {
+    if (actionName) endMark(actionName);
     queryClient.invalidateQueries({ queryKey: ["stock", "batches"] });
   }
 
@@ -246,21 +248,21 @@ export function StockPageClient({ warehouseName }: StockPageClientProps) {
         locations={locations}
         tags={tags}
         onClose={() => setInboundTarget(null)}
-        onSuccess={handleSuccess}
+        onSuccess={() => handleSuccess("inbound")}
       />
 
       <ConsumeModal
         open={!!consumeTarget}
         batch={consumeTarget}
         onClose={() => setConsumeTarget(null)}
-        onSuccess={handleSuccess}
+        onSuccess={() => handleSuccess("consume")}
       />
 
       <AdjustModal
         open={!!adjustTarget}
         batch={adjustTarget}
         onClose={() => setAdjustTarget(null)}
-        onSuccess={handleSuccess}
+        onSuccess={() => handleSuccess("adjust")}
       />
 
       <LocationsModal

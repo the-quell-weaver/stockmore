@@ -4,6 +4,7 @@ import { useEffect, useState, useTransition } from "react";
 
 import type { BatchWithRefs } from "@/lib/transactions/service";
 import { consumeFromBatchModalAction } from "@/app/stock/consume/modal-actions";
+import { startMark } from "@/lib/perf";
 import {
   Dialog,
   DialogContent,
@@ -36,6 +37,7 @@ export function ConsumeModal({ open, batch, onClose, onSuccess }: ConsumeModalPr
     e.preventDefault();
     const fd = new FormData(e.currentTarget);
     setError(null);
+    startMark("consume");
     startTransition(async () => {
       const result = await consumeFromBatchModalAction(fd);
       if (result.ok) {

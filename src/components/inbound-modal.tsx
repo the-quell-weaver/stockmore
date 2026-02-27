@@ -10,6 +10,7 @@ import {
   addInboundToBatchModalAction,
   fetchBatchesForItemAction,
 } from "@/app/stock/inbound/modal-actions";
+import { startMark } from "@/lib/perf";
 import {
   Dialog,
   DialogContent,
@@ -67,6 +68,7 @@ export function InboundModal({
     e.preventDefault();
     const fd = new FormData(e.currentTarget);
     setError(null);
+    startMark("inbound");
     startTransition(async () => {
       const result = await createInboundBatchModalAction(fd);
       if (result.ok) {
@@ -82,6 +84,7 @@ export function InboundModal({
     e.preventDefault();
     const fd = new FormData(e.currentTarget);
     setError(null);
+    startMark("inbound");
     startTransition(async () => {
       const result = await addInboundToBatchModalAction(fd);
       if (result.ok) {
