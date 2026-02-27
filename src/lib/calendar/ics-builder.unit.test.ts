@@ -3,10 +3,21 @@ import { describe, expect, it } from "vitest";
 import {
   buildEventUid,
   buildExpiryIcs,
+  escapeText,
+  foldLine,
   reminderDate,
   REMINDER_OFFSETS_DAYS,
   type CalendarBatch,
 } from "@/lib/calendar/ics-builder";
+
+// ---------------------------------------------------------------------------
+// Helpers
+// ---------------------------------------------------------------------------
+
+/** RFC 5545 §3.1 unfold: removes CRLF + single whitespace fold continuations. */
+function unfold(ics: string): string {
+  return ics.replace(/\r\n[ \t]/g, "");
+}
 
 // ---------------------------------------------------------------------------
 // Fixtures
@@ -197,7 +208,8 @@ describe("buildExpiryIcs", () => {
 
   // AC5: DESCRIPTION includes storageLocationName when present
   it("includes storageLocationName in DESCRIPTION when present (AC5)", () => {
-    const ics = buildExpiryIcs([BATCH_WITH_EXPIRY]);
+    // Unfold before asserting: byte-based folding may split multibyte content across lines.
+    const ics = unfold(buildExpiryIcs([BATCH_WITH_EXPIRY]));
     expect(ics).toContain("倉庫A");
   });
 
@@ -217,8 +229,8 @@ describe("buildExpiryIcs", () => {
     expect(lines.length).toBeGreaterThan(5);
   });
 
-  // RFC 5545: lines folded at 75 chars
-  it("folds lines longer than 75 characters", () => {
+  // RFC 5545: lines folded so each is ≤ 75 UTF-8 bytes
+  it("folds lines so no line exceeds 75 UTF-8 bytes", () => {
     const batch: CalendarBatch = {
       id: "longname-0000-0000-0000-000000000000",
       expiryDate: "2028-06-30",
@@ -229,11 +241,11 @@ describe("buildExpiryIcs", () => {
     };
     const ics = buildExpiryIcs([batch]);
     for (const line of ics.split("\r\n")) {
-      expect(line.length).toBeLessThanOrEqual(75);
+      expect(Buffer.byteLength(line, "utf-8")).toBeLessThanOrEqual(75);
     }
   });
 
-  // RFC 5545: folded lines start with a space
+  // RFC 5545: continuation lines start with a single space
   it("continuation lines after folding start with a single space", () => {
     const batch: CalendarBatch = {
       id: "fold-test-0000-0000-0000-000000000001",
@@ -246,11 +258,14 @@ describe("buildExpiryIcs", () => {
     };
     const ics = buildExpiryIcs([batch]);
     const lines = ics.split("\r\n");
-    // Any continuation line must start with a space
+    // Any line that is NOT a property name start must be a continuation (space-prefixed)
+    // when the previous line was exactly at the fold boundary.
     for (let i = 1; i < lines.length; i++) {
-      const prev = lines[i - 1];
-      const curr = lines[i];
-      if (prev && prev.length === 75 && curr && curr.length > 0 && !curr.startsWith("BEGIN") && !curr.startsWith("END") && !curr.startsWith("VERSION") && !curr.startsWith("PRODID") && !curr.startsWith("CALSCALE") && !curr.startsWith("METHOD") && !curr.startsWith("UID") && !curr.startsWith("DTSTAMP") && !curr.startsWith("DTSTART") && !curr.startsWith("DTEND") && !curr.startsWith("SUMMARY") && !curr.startsWith("DESCRIPTION")) {
+      const prev = lines[i - 1]!;
+      const curr = lines[i]!;
+      // A continuation line is identified by being non-empty and not starting with a known property/component name
+      const isKnownStart = /^(BEGIN|END|VERSION|PRODID|CALSCALE|METHOD|UID|DTSTAMP|DTSTART|DTEND|SUMMARY|DESCRIPTION)/.test(curr);
+      if (curr.length > 0 && !isKnownStart && Buffer.byteLength(prev, "utf-8") >= 74) {
         expect(curr.startsWith(" ")).toBe(true);
       }
     }
@@ -277,5 +292,136 @@ describe("buildExpiryIcs", () => {
     expect(ics).toContain(
       `UID:prepstock-batch-${BATCH_WITH_EXPIRY.id}-offset-1`,
     );
+  });
+
+  // P1: special characters in user data are escaped in SUMMARY and DESCRIPTION
+  it("escapes comma in itemName in SUMMARY (P1)", () => {
+    const batch: CalendarBatch = { ...BATCH_WITH_EXPIRY, itemName: "水, 食物" };
+    const ics = buildExpiryIcs([batch]);
+    expect(ics).toContain("水\\, 食物 到期提醒");
+    expect(ics).not.toContain("水, 食物 到期提醒");
+  });
+
+  it("escapes semicolon in itemName in SUMMARY (P1)", () => {
+    const batch: CalendarBatch = { ...BATCH_WITH_EXPIRY, itemName: "水; 食物" };
+    const ics = buildExpiryIcs([batch]);
+    expect(ics).toContain("水\\; 食物 到期提醒");
+    expect(ics).not.toContain("水; 食物 到期提醒");
+  });
+
+  it("escapes backslash in itemName in SUMMARY (P1)", () => {
+    const batch: CalendarBatch = { ...BATCH_WITH_EXPIRY, itemName: "C:\\Water" };
+    const ics = buildExpiryIcs([batch]);
+    expect(ics).toContain("C:\\\\Water");
+  });
+
+  it("escapes special chars in storageLocationName in DESCRIPTION (P1)", () => {
+    const batch: CalendarBatch = {
+      ...BATCH_WITH_EXPIRY,
+      storageLocationName: "Rack A, Section 1; Zone B",
+    };
+    // Unfold before asserting: long DESCRIPTION may be folded across lines.
+    const ics = unfold(buildExpiryIcs([batch]));
+    expect(ics).toContain("Rack A\\, Section 1\\; Zone B");
+  });
+
+  it("escapes special chars in itemUnit in DESCRIPTION (P1)", () => {
+    const batch: CalendarBatch = { ...BATCH_WITH_EXPIRY, itemUnit: "box,bag" };
+    const ics = buildExpiryIcs([batch]);
+    expect(ics).toContain("box\\,bag");
+  });
+});
+
+// ---------------------------------------------------------------------------
+// escapeText (unit tests for the exported helper)
+// ---------------------------------------------------------------------------
+
+describe("escapeText", () => {
+  it("escapes backslash → double backslash", () => {
+    expect(escapeText("a\\b")).toBe("a\\\\b");
+  });
+
+  it("escapes comma → \\,", () => {
+    expect(escapeText("a,b")).toBe("a\\,b");
+  });
+
+  it("escapes semicolon → \\;", () => {
+    expect(escapeText("a;b")).toBe("a\\;b");
+  });
+
+  it("does not modify normal text", () => {
+    expect(escapeText("飲用水 123 abc")).toBe("飲用水 123 abc");
+  });
+
+  it("escapes backslash before comma (order preserved)", () => {
+    // Input: a\,b  →  first escape \→\\, then ,→\,  →  a\\,b  →  "a\\\\,b" wait...
+    // Let's trace: input = "a\\,b" (JS string: a\,b)
+    // After \ → \\:  "a\\\\,b"  (JS string: a\\,b)
+    // After , → \,: "a\\\\\\,b" (JS string: a\\\,b)
+    // That is: a + \\ + \, + b  — which is correct in iCal: escaped backslash then escaped comma
+    expect(escapeText("a\\,b")).toBe("a\\\\\\,b");
+  });
+
+  it("handles empty string", () => {
+    expect(escapeText("")).toBe("");
+  });
+
+  it("handles multiple special chars", () => {
+    expect(escapeText("a,b;c\\d")).toBe("a\\,b\\;c\\\\d");
+  });
+});
+
+// ---------------------------------------------------------------------------
+// foldLine (unit tests for the exported helper)
+// ---------------------------------------------------------------------------
+
+describe("foldLine", () => {
+  it("returns short ASCII line unchanged", () => {
+    const line = "BEGIN:VCALENDAR";
+    expect(foldLine(line)).toBe(line);
+  });
+
+  it("returns line of exactly 75 bytes unchanged", () => {
+    const line = "A".repeat(75); // 75 ASCII bytes
+    expect(foldLine(line)).toBe(line);
+  });
+
+  it("folds 76-byte ASCII line at 75 bytes", () => {
+    const line = "A".repeat(76);
+    const folded = foldLine(line);
+    const parts = folded.split("\r\n");
+    expect(parts).toHaveLength(2);
+    expect(Buffer.byteLength(parts[0]!, "utf-8")).toBe(75);
+    expect(parts[1]).toBe(" " + "A"); // 1 space + 1 char
+  });
+
+  it("does not split a multibyte character across fold boundary", () => {
+    // 'あ' is 3 bytes in UTF-8. Build a line that is exactly 74 bytes ASCII + 'あ' = 77 bytes total.
+    const line = "S:" + "A".repeat(72) + "あ"; // "S:" (2) + 72 "A" (72) + "あ" (3) = 77 bytes
+    const folded = foldLine(line);
+    const parts = folded.split("\r\n");
+    // First part must be ≤ 75 bytes and must not end with half of 'あ'
+    expect(Buffer.byteLength(parts[0]!, "utf-8")).toBeLessThanOrEqual(75);
+    // 'あ' must appear in one piece somewhere
+    const unfolded = parts.map((p, i) => (i === 0 ? p : p.slice(1))).join("");
+    expect(unfolded).toContain("あ");
+  });
+
+  it("ensures all segments ≤ 75 UTF-8 bytes after folding", () => {
+    // All-Chinese line: each char = 3 bytes → 26 chars = 78 bytes
+    const line = "SUMMARY:" + "水".repeat(26);
+    const folded = foldLine(line);
+    for (const seg of folded.split("\r\n")) {
+      expect(Buffer.byteLength(seg, "utf-8")).toBeLessThanOrEqual(75);
+    }
+  });
+
+  it("continuation segments start with a single space", () => {
+    const line = "SUMMARY:" + "水".repeat(26); // > 75 bytes
+    const folded = foldLine(line);
+    const parts = folded.split("\r\n");
+    for (const part of parts.slice(1)) {
+      expect(part.startsWith(" ")).toBe(true);
+    }
   });
 });
