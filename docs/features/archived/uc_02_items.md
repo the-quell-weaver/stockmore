@@ -1,7 +1,7 @@
 <!-- Generated from template.md for UC-02 -->
 
 # Feature: Items（品項主檔管理：新增/編輯）
-- **Doc**: docs/features/uc_02_items.md
+- **Doc**: docs/features/archived/uc_02_items.md
 - **Status**: Implemented
 - **PRD linkage**: UC-02（管理品項：新增/編輯，含最低庫存、單位、標籤、備註）
 - **Last updated**: 2026-02-22

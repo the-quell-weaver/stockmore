@@ -1,7 +1,7 @@
 <!-- Generated from template.md for UC-03 -->
 
 # Feature: Storage Locations（存放點字典：新增/改名）
-- **Doc**: docs/features/uc_03_storage_locations.md
+- **Doc**: docs/features/archived/uc_03_storage_locations.md
 - **Status**: Implemented
 - **PRD linkage**: UC-03（管理存放點字典：新增/改名）
 - **Last updated**: 2026-02-22

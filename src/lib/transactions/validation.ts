@@ -28,7 +28,7 @@ export type AdjustBatchQuantityInput = {
   batchId: string;
   actualQuantity: number;
   note?: string | null;
-  idempotencyKey?: string | null;
+  idempotencyKey: string;
 };
 
 export function validateConsumeFromBatchInput(
@@ -74,7 +74,10 @@ export function validateAdjustBatchQuantityInput(
     batchId: validateId(input.batchId),
     actualQuantity: validateNonNegativeDecimal(input.actualQuantity),
     note: normalizeOptionalText(input.note),
-    idempotencyKey: normalizeOptionalText(input.idempotencyKey),
+    idempotencyKey: validateRequiredText(
+      input.idempotencyKey,
+      TRANSACTION_ERROR_CODES.IDEMPOTENCY_KEY_REQUIRED,
+    ),
   };
 }
 
@@ -127,6 +130,14 @@ function normalizeOptionalId(raw?: string | null): string | null {
   if (raw == null) return null;
   const value = raw.trim();
   return value.length > 0 ? value : null;
+}
+
+function validateRequiredText(raw: string, errorCode: typeof TRANSACTION_ERROR_CODES[keyof typeof TRANSACTION_ERROR_CODES]): string {
+  const value = raw?.trim() ?? "";
+  if (!value) {
+    throw new TransactionError(errorCode);
+  }
+  return value;
 }
 
 function normalizeOptionalText(raw?: string | null): string | null {

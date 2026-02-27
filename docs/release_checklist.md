@@ -7,7 +7,7 @@
 - [ ] 本次 release 的 PRs 都已合併至 main。
 - [ ] （CI 對齊）確認 PR 階段的 `.github/workflows/ci.yml` 已通過（lint/typecheck/unit/integration/build/e2e）。
 - [ ] migrations 已合併，且本機/CI 能從空 DB 重建成功。
-- [ ] 有對應的 feature 文件（docs/features/uc_0X_*.md）更新。
+- [ ] 有對應的 feature 文件（docs/features/current/*.md 或 docs/features/uc/*.md）更新。
 
 ## 1. 環境變數與 Secrets 命名
 

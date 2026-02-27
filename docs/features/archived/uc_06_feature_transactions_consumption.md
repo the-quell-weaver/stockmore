@@ -1,7 +1,7 @@
 <!-- Generated from template.md for UC-06 -->
 
 # Feature: Transactions — Consumption（消耗/出庫：手動選擇批次並扣減）
-- **Doc**: docs/features/transactions-consumption.md
+- **Doc**: docs/features/archived/uc_06_feature_transactions_consumption.md
 - **Status**: Implemented
 - **PRD linkage**: UC-06（消耗：手動選擇批次並扣減，產生交易紀錄）
 - **Last updated**: 2026-02-19

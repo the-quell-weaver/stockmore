@@ -1,6 +1,10 @@
 # Stockmore 《綢繆》（防災物資庫存管理）PRD（Global Overview）
 
-> 本文件維持「全局概覽」角色：描述產品目標、MVP 範圍、用例與全局驗收。每個功能細節應拆到 `docs/features/*.md`。
+> 本文件維持「全局概覽」角色：描述產品目標、MVP 範圍、用例與全局驗收。每個功能細節應拆到 `docs/features/current/*.md`（產品現況）或 `docs/features/uc/*.md`（未實作需求）。
+
+> 2026-02-27 規格更新（通知優先序）：
+> MVP 通知能力以「庫存到期行事曆匯出（Calendar export / subscribe）」為最優先；
+> Email 通知（到期/低庫存）改列後續功能，待後續迭代再納入。
 
 ## 1. 產品背景與問題定義
 
@@ -129,6 +133,8 @@ C) **純本地工作（Local-first / On-device）— 後續功能**
 
 ### 5.9 到期 / 低庫存 Email 提醒（Jobs）
 
+* 2026-02-27 起的交付優先序：先做「庫存到期行事曆匯出（Calendar export / subscribe）」。
+* Email 到期/低庫存提醒改列後續功能（見 8.19）。
 * 提醒通路：Email。
 * 到期提醒：到期日為空（未填）者永不提醒。
 * 低庫存提醒：當某品項（或等價聚合口徑）低於最低庫存時觸發。
@@ -140,31 +146,32 @@ C) **純本地工作（Local-first / On-device）— 後續功能**
 
 * UC-01：使用者登入並建立/取得預設倉庫
 
-  * Spec：docs/features/uc_01_auth_onboarding.md
+  * Spec：docs/features/current/uc_01_auth_onboarding.md
 * UC-02：管理品項（Items）：新增/編輯（含最低庫存、單位、分類/標籤、備註）
 
-  * Spec：docs/features/uc_02_items.md
+  * Spec：docs/features/current/uc_02_items.md
 * UC-03：管理存放點字典：新增/改名
 
-  * Spec：docs/features/uc_03_storage_locations.md
+  * Spec：docs/features/current/uc_03_storage_locations.md
 * UC-04：管理標籤字典：新增/改名
 
-  * Spec：docs/features/tags-and-categories.md
+  * Spec：docs/features/current/uc_04_tags_categories.md
 * UC-05：入庫：直接新增庫存批次或增加數量（產生交易紀錄）
 
-  * Spec：docs/features/transactions-inbound.md
+  * Spec：docs/features/current/uc_05_transactions_inbound.md
 * UC-06：消耗（出庫）：手動選擇批次並扣減（產生交易紀錄）
 
-  * Spec：docs/features/transactions-consumption.md
+  * Spec：docs/features/current/uc_06_transactions_consumption.md
 * UC-07：盤點（調整）：手動選擇批次並直接指定實際數量（產生交易紀錄）
 
-  * Spec：docs/features/transactions-adjustment.md
+  * Spec：docs/features/current/uc_07_transactions_adjustment.md
 * UC-08：查看庫存列表：平攤顯示所有批次 + 基本搜尋
 
-  * Spec：docs/features/stock-view.md
+  * Spec：docs/features/current/uc_08_stock_view.md
 * UC-09：到期/低庫存 Email 提醒：依規則寄送並去重
 
-  * Spec：docs/features/notifications.md
+  * Spec：docs/features/uc/uc_09_notifications.md
+  * 2026-02-27 更新：目前優先交付為「到期通知行事曆匯出」；Email 通知移至 future。
 
 ## 7. 全局驗收（Definition of Done）
 
@@ -188,6 +195,7 @@ C) **純本地工作（Local-first / On-device）— 後續功能**
   * 庫存列表可平攤顯示所有批次，並可用基本搜尋快速找到項目。
 * 通知
 
+  * MVP 優先：可匯出到期通知行事曆（至少支援 iCalendar `.ics` 或等價格式），供外部行事曆匯入/訂閱。
   * Email 到期提醒可選擇啟用並可觸發寄送，具備基本去重/頻率控制。
   * Email 低庫存提醒可選擇啟用並可觸發寄送，具備基本去重/頻率控制。
 * 安全與資料隔離（高層次）
@@ -323,6 +331,12 @@ C) **純本地工作（Local-first / On-device）— 後續功能**
   * 蒐集可重現條件（OS/Node/Next 版本、檔案系統、網路）
   * 最小重現專案與 log
   * 評估升級 Next 或調整設定後再切回 Turbopack 的時機
+
+### 8.19 Email 通知（到期 / 低庫存）— 後續功能
+
+* 2026-02-27 起，Email 通知不列為目前優先交付。
+* 後續可在既有到期行事曆匯出能力上，補上 Email 到期提醒與低庫存提醒。
+* 仍需保留去重、頻率控制與可重播（replay/rebuild）要求。
 
 ## 9. 仍待釐清（Questions to Confirm）
 

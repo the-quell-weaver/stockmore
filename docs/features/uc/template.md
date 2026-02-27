@@ -1,7 +1,7 @@
 <!-- 這是用來產生 feature 文件用的模板文件。 -->
 
 # Feature: <Feature Name>
-- **Doc**: docs/features/<feature-slug>.md
+- **Doc**: docs/features/uc/<feature-slug>.md
 - **Status**: Draft | In Review | Approved
 - **PRD linkage**: UC-<xx> (<PRD section / use-case name>)
 - **Last updated**: YYYY-MM-DD
