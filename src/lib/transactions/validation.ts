@@ -150,12 +150,14 @@ export type ListStockBatchesInput = {
   q?: string | null;
   limit?: number | null;
   cursor?: string | null;
+  has_expiry?: boolean | null;
 };
 
 type ValidatedListStockBatchesInput = {
   q: string | null;
   limit: number;
   cursor: string | null;
+  hasExpiry: boolean;
 };
 
 const MAX_Q_LENGTH = 200;
@@ -179,5 +181,7 @@ export function validateListStockBatchesInput(
 
   const cursor = normalizeOptionalText(input.cursor);
 
-  return { q, limit, cursor };
+  const hasExpiry = input.has_expiry === true;
+
+  return { q, limit, cursor, hasExpiry };
 }

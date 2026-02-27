@@ -55,6 +55,7 @@
 | addInboundToBatch | Server Action | `addInboundToBatchAction` | Authenticated (owner/editor) | 補充既有批次庫存 | UC_05 |
 | consumeFromBatch | Server Action | `consumeFromBatchAction` | Authenticated (owner/editor) | 從批次扣減消耗數量 | UC_06 |
 | adjustBatchQuantity | Server Action | `adjustBatchQuantityAction` | Authenticated (owner/editor) | 指定批次實際數量（盤點調整） | UC_07 |
+| exportExpiryCalendar | Route Handler | `GET /api/calendar/expiry.ics` | Authenticated | 匯出到期提醒事件為 iCalendar 格式（RFC 5545） | UC_09 |
 
 ## 3. 介面規格（逐項）
 
@@ -279,6 +280,56 @@
 - 冪等：同 `(org_id, idempotency_key)` 第二次呼叫回傳同一筆交易，不重複調整。
 - 實作：`src/app/stock/adjust/actions.ts` → `adjust_batch_quantity()` DB RPC。
 - 測試：`src/tests/integration/transactions/adjustment.integration.test.ts`。
+
+### 3.9 `exportExpiryCalendar`
+
+**Type**
+- Route Handler（GET）
+
+**Purpose**
+- 匯出所有有到期日的批次為 RFC 5545 iCalendar 格式，讓使用者匯入 Google Calendar / Apple Calendar 等主流工具。
+- 對應 UC-09 Acceptance Criteria AC1–AC5。
+
+**Auth**
+- 需要登入（Authenticated）。
+- `org_id` 由 session membership 推導，不信任 client 傳入。
+
+**Request**
+- Method: `GET`
+- Path: `/api/calendar/expiry.ics`
+- Query params: 無
+- Headers: 需含有效 session cookie（透過 SSR Supabase client 讀取）
+
+**Response**
+- **200 OK**
+  - `Content-Type: text/calendar; charset=utf-8`
+  - `Content-Disposition: attachment; filename="prepstock-expiry.ics"`
+  - `Cache-Control: no-store`
+  - Body: RFC 5545 VCALENDAR 字串（CRLF 行結尾）
+  - 每個有 `expiry_date` 的批次產生 3 個 VEVENT（到期前 30/7/1 天）
+  - 無到期批次時回傳合法空 VCALENDAR（無 VEVENT）
+- **401 Unauthorized**：未登入或 session 無效，回傳 `{ "error": "Unauthorized" }`
+
+**Event UID 公式（穩定性）**
+- `prepstock-batch-{batchId}-offset-{offsetDays}`
+- 同 batchId + offset → 同 UID，供行事曆客戶端 upsert（而非重複建立）
+
+**VEVENT 欄位映射（AC5）**
+
+| iCal 欄位 | 資料來源 | 說明 |
+|-----------|---------|------|
+| UID | `batches.id` + offset | 穩定；格式見上 |
+| DTSTART;VALUE=DATE | `batches.expiry_date` - offsetDays | 提醒觸發日（全天事件） |
+| DTEND;VALUE=DATE | DTSTART + 1 day | RFC 5545 all-day 結束邊界 |
+| SUMMARY | `items.name` + offset | 例：`飲用水 到期提醒（30 天前）` |
+| DESCRIPTION | `batches.expiry_date`, `batches.quantity`, `items.unit`, `storage_locations.name` | 例：`到期日：2028-06-30\n數量：100 瓶\n儲存位置：倉庫A` |
+| DTSTAMP | 匯出時刻（UTC） | 每次呼叫不同（非穩定性要求欄位） |
+
+**Notes**
+- 冪等：read-only；重複呼叫回傳結構相同（DTSTAMP 除外）。
+- MVP 上限：最多 200 筆 batch（`listStockBatches({ limit: 200 })`）；未來可改為無限制查詢。
+- 實作：`src/app/api/calendar/expiry.ics/route.ts` → `buildExpiryIcs()` @ `src/lib/calendar/ics-builder.ts`。
+- 測試：`src/lib/calendar/ics-builder.unit.test.ts`、`src/tests/integration/calendar/calendar.integration.test.ts`。
 
 ### 3.x `<name>`
 
