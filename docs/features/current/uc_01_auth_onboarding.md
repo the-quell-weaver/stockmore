@@ -11,9 +11,9 @@
 - 任何 org/warehouse 範圍都從 session/membership 推導，不接受 client 指定跨租戶資料。
 
 ## 2. API / Actions (Current)
-- `action requestMagicLink(email)`
+- `client signInWithOtp(email)`
+  - 目前由 client 端直接呼叫 Supabase Auth（`signInWithOtp`），非 server action。
   - Request: `{ email }`
-  - Response: `{ ok: true }`
   - Errors: `AUTH_EMAIL_INVALID`（與 provider auth error）
 - `client signInWithPassword(email, password)`
   - 登入成功後應觸發 bootstrap。

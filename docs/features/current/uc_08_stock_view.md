@@ -12,9 +12,10 @@
 
 ## 2. API / Actions (Current)
 - `action listStockBatches(input)`
-  - Request: `{ q?, limit?, cursor? }`
-  - Response: `{ batches: BatchWithRefs[], nextCursor? }`
+  - Request: `{ q?, limit? }`
+  - Response: `BatchWithRefs[]`
   - Errors: `FORBIDDEN`, `INVALID_QUERY`
+  - Note: cursor-based pagination 尚未實作，移 Future Works（低優先）。
 - `action getBatchSummary(batchId)`（可選）
   - Response: `{ batch: BatchWithRefs }`
   - Errors: `NOT_FOUND`, `FORBIDDEN`
@@ -27,3 +28,4 @@
 ## 4. Known Limits
 - 不含兩層聚合顯示。
 - 不含進階篩選（標籤/存放點/到期狀態/低庫存）與列印輸出。
+- Cursor-based pagination 未落地；目前為固定上限的陣列回傳。

@@ -16,9 +16,6 @@
   - Request: `{ batchId, quantity, note?, idempotencyKey? }`
   - Response: `{ batch, transaction }`
   - Errors: `BATCH_NOT_FOUND`, `QUANTITY_INVALID`, `INSUFFICIENT_STOCK`, `FORBIDDEN`
-- `action listConsumableBatches(query?)`
-  - Response: `{ batches }`
-
 ## 3. Permissions / Security
 - owner/editor: 可建立 consumption 交易。
 - viewer: 僅可讀。
@@ -31,3 +28,4 @@
 ## 5. Known Limits
 - 不含跨多批次自動拆分扣減。
 - 不含退貨專用交易型別（以 inbound/adjustment 處理）。
+- 目前無 `listConsumableBatches` API；批次列表統一由 UC-08 `listStockBatches` 提供。
