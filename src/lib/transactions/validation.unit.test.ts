@@ -271,22 +271,25 @@ describe("validateAddInboundToBatchInput", () => {
 
 describe("validateAdjustBatchQuantityInput", () => {
   const VALID_BATCH_ID = "00000000-0000-0000-0000-000000000002";
+  const VALID_KEY = "test-idempotency-key";
 
   it("accepts actualQuantity=0 (adjust to zero is valid)", () => {
     const result = validateAdjustBatchQuantityInput({
       batchId: VALID_BATCH_ID,
       actualQuantity: 0,
+      idempotencyKey: VALID_KEY,
     });
     expect(result.batchId).toBe(VALID_BATCH_ID);
     expect(result.actualQuantity).toBe(0);
     expect(result.note).toBeNull();
-    expect(result.idempotencyKey).toBeNull();
+    expect(result.idempotencyKey).toBe(VALID_KEY);
   });
 
   it("accepts positive integer actualQuantity", () => {
     const result = validateAdjustBatchQuantityInput({
       batchId: VALID_BATCH_ID,
       actualQuantity: 8,
+      idempotencyKey: VALID_KEY,
     });
     expect(result.actualQuantity).toBe(8);
   });
@@ -295,6 +298,7 @@ describe("validateAdjustBatchQuantityInput", () => {
     const result = validateAdjustBatchQuantityInput({
       batchId: VALID_BATCH_ID,
       actualQuantity: 4.5,
+      idempotencyKey: VALID_KEY,
     });
     expect(result.actualQuantity).toBe(4.5);
   });
@@ -303,37 +307,38 @@ describe("validateAdjustBatchQuantityInput", () => {
     const result = validateAdjustBatchQuantityInput({
       batchId: VALID_BATCH_ID,
       actualQuantity: 0.001,
+      idempotencyKey: VALID_KEY,
     });
     expect(result.actualQuantity).toBe(0.001);
   });
 
   it("rejects negative actualQuantity", () => {
     expect(() =>
-      validateAdjustBatchQuantityInput({ batchId: VALID_BATCH_ID, actualQuantity: -1 }),
+      validateAdjustBatchQuantityInput({ batchId: VALID_BATCH_ID, actualQuantity: -1, idempotencyKey: VALID_KEY }),
     ).toThrow(expect.objectContaining({ code: TRANSACTION_ERROR_CODES.QUANTITY_INVALID }));
   });
 
   it("rejects NaN actualQuantity", () => {
     expect(() =>
-      validateAdjustBatchQuantityInput({ batchId: VALID_BATCH_ID, actualQuantity: NaN }),
+      validateAdjustBatchQuantityInput({ batchId: VALID_BATCH_ID, actualQuantity: NaN, idempotencyKey: VALID_KEY }),
     ).toThrow(expect.objectContaining({ code: TRANSACTION_ERROR_CODES.QUANTITY_INVALID }));
   });
 
   it("rejects Infinity actualQuantity", () => {
     expect(() =>
-      validateAdjustBatchQuantityInput({ batchId: VALID_BATCH_ID, actualQuantity: Infinity }),
+      validateAdjustBatchQuantityInput({ batchId: VALID_BATCH_ID, actualQuantity: Infinity, idempotencyKey: VALID_KEY }),
     ).toThrow(expect.objectContaining({ code: TRANSACTION_ERROR_CODES.QUANTITY_INVALID }));
   });
 
   it("rejects empty batchId", () => {
     expect(() =>
-      validateAdjustBatchQuantityInput({ batchId: "", actualQuantity: 5 }),
+      validateAdjustBatchQuantityInput({ batchId: "", actualQuantity: 5, idempotencyKey: VALID_KEY }),
     ).toThrow(expect.objectContaining({ code: TRANSACTION_ERROR_CODES.FORBIDDEN }));
   });
 
   it("rejects whitespace-only batchId", () => {
     expect(() =>
-      validateAdjustBatchQuantityInput({ batchId: "   ", actualQuantity: 5 }),
+      validateAdjustBatchQuantityInput({ batchId: "   ", actualQuantity: 5, idempotencyKey: VALID_KEY }),
     ).toThrow(expect.objectContaining({ code: TRANSACTION_ERROR_CODES.FORBIDDEN }));
   });
 
@@ -342,17 +347,21 @@ describe("validateAdjustBatchQuantityInput", () => {
       batchId: VALID_BATCH_ID,
       actualQuantity: 5,
       note: "",
+      idempotencyKey: VALID_KEY,
     });
     expect(result.note).toBeNull();
   });
 
-  it("normalizes whitespace-only idempotencyKey to null", () => {
-    const result = validateAdjustBatchQuantityInput({
-      batchId: VALID_BATCH_ID,
-      actualQuantity: 5,
-      idempotencyKey: "  ",
-    });
-    expect(result.idempotencyKey).toBeNull();
+  it("rejects empty string idempotencyKey", () => {
+    expect(() =>
+      validateAdjustBatchQuantityInput({ batchId: VALID_BATCH_ID, actualQuantity: 5, idempotencyKey: "" }),
+    ).toThrow(expect.objectContaining({ code: TRANSACTION_ERROR_CODES.IDEMPOTENCY_KEY_REQUIRED }));
+  });
+
+  it("rejects whitespace-only idempotencyKey", () => {
+    expect(() =>
+      validateAdjustBatchQuantityInput({ batchId: VALID_BATCH_ID, actualQuantity: 5, idempotencyKey: "  " }),
+    ).toThrow(expect.objectContaining({ code: TRANSACTION_ERROR_CODES.IDEMPOTENCY_KEY_REQUIRED }));
   });
 
   it("preserves non-empty optional fields", () => {
@@ -367,14 +376,16 @@ describe("validateAdjustBatchQuantityInput", () => {
   });
 
   // delta calculation: ensure 0 is distinct from positive (both valid for adjustment)
-  it("distinguishes actualQuantity=0 from undefined (both valid but semantically different)", () => {
+  it("distinguishes actualQuantity=0 from positive (both valid but semantically different)", () => {
     const resultZero = validateAdjustBatchQuantityInput({
       batchId: VALID_BATCH_ID,
       actualQuantity: 0,
+      idempotencyKey: VALID_KEY,
     });
     const resultPositive = validateAdjustBatchQuantityInput({
       batchId: VALID_BATCH_ID,
       actualQuantity: 10,
+      idempotencyKey: VALID_KEY,
     });
     expect(resultZero.actualQuantity).toBe(0);
     expect(resultPositive.actualQuantity).toBe(10);

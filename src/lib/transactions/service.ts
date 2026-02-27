@@ -185,7 +185,7 @@ export async function adjustBatchQuantity(
     p_actual_quantity: validated.actualQuantity,
     p_note: validated.note ?? null,
     p_source: "web",
-    p_idempotency_key: validated.idempotencyKey ?? null,
+    p_idempotency_key: validated.idempotencyKey,
   });
 
   if (error) {

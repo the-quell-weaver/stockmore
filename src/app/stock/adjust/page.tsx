@@ -19,6 +19,7 @@ const ERROR_MESSAGES: Record<string, string> = {
   BATCH_NOT_FOUND: "找不到指定批次",
   FORBIDDEN: "權限不足",
   CONFLICT: "操作衝突，請重試",
+  IDEMPOTENCY_KEY_REQUIRED: "操作金鑰缺少，請重新載入頁面後再試",
 };
 
 async function AdjustContent({

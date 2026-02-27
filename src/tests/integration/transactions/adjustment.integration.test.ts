@@ -170,6 +170,7 @@ describe("adjustBatchQuantity integration (UC_07)", () => {
         batchId: inbound.batchId,
         actualQuantity: 8,
         note: "recount after inspection",
+        idempotencyKey: randomUUID(),
       });
 
       expect(result.batchId).toBe(inbound.batchId);
@@ -217,6 +218,7 @@ describe("adjustBatchQuantity integration (UC_07)", () => {
       const result = await adjustBatchQuantity(asServiceClient(client), {
         batchId: inbound.batchId,
         actualQuantity: 12,
+        idempotencyKey: randomUUID(),
       });
 
       expect(result.batchQuantity).toBe(12);
@@ -251,6 +253,7 @@ describe("adjustBatchQuantity integration (UC_07)", () => {
       const result = await adjustBatchQuantity(asServiceClient(client), {
         batchId: inbound.batchId,
         actualQuantity: 4.5,
+        idempotencyKey: randomUUID(),
       });
 
       expect(result.batchQuantity).toBe(4.5);
@@ -283,6 +286,7 @@ describe("adjustBatchQuantity integration (UC_07)", () => {
         batchId: inbound.batchId,
         actualQuantity: 0,
         note: "all items expired",
+        idempotencyKey: randomUUID(),
       });
 
       expect(result.batchQuantity).toBe(0);
@@ -332,6 +336,7 @@ describe("adjustBatchQuantity integration (UC_07)", () => {
         adjustBatchQuantity(asServiceClient(client), {
           batchId: inbound.batchId,
           actualQuantity: 8,
+          idempotencyKey: randomUUID(),
         }),
       ).rejects.toMatchObject({ code: TRANSACTION_ERROR_CODES.FORBIDDEN });
 
@@ -358,6 +363,7 @@ describe("adjustBatchQuantity integration (UC_07)", () => {
         adjustBatchQuantity(asServiceClient(client), {
           batchId: randomUUID(),
           actualQuantity: -1,
+          idempotencyKey: randomUUID(),
         }),
       ).rejects.toMatchObject({ code: TRANSACTION_ERROR_CODES.QUANTITY_INVALID });
     } finally {
@@ -376,6 +382,7 @@ describe("adjustBatchQuantity integration (UC_07)", () => {
         adjustBatchQuantity(asServiceClient(client), {
           batchId: randomUUID(),
           actualQuantity: NaN,
+          idempotencyKey: randomUUID(),
         }),
       ).rejects.toMatchObject({ code: TRANSACTION_ERROR_CODES.QUANTITY_INVALID });
     } finally {
@@ -456,6 +463,7 @@ describe("adjustBatchQuantity integration (UC_07)", () => {
         adjustBatchQuantity(asServiceClient(clientB), {
           batchId: batchA.batchId,
           actualQuantity: 5,
+          idempotencyKey: randomUUID(),
         }),
       ).rejects.toMatchObject({ code: TRANSACTION_ERROR_CODES.BATCH_NOT_FOUND });
 
@@ -483,6 +491,7 @@ describe("adjustBatchQuantity integration (UC_07)", () => {
         adjustBatchQuantity(asServiceClient(client), {
           batchId: randomUUID(), // random UUID that doesn't exist
           actualQuantity: 5,
+          idempotencyKey: randomUUID(),
         }),
       ).rejects.toMatchObject({ code: TRANSACTION_ERROR_CODES.BATCH_NOT_FOUND });
     } finally {
@@ -507,6 +516,7 @@ describe("adjustBatchQuantity integration (UC_07)", () => {
         batchId: inbound.batchId,
         actualQuantity: 15,
         note: "test delta",
+        idempotencyKey: randomUUID(),
       });
 
       const { data: txns } = await adminClient

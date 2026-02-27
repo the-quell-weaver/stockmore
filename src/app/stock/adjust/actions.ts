@@ -32,7 +32,7 @@ export async function adjustBatchQuantityAction(formData: FormData) {
   const batchId = parseOptionalString(formData.get("batchId")) ?? "";
   const actualQuantity = parseNonNegativeDecimal(formData.get("actualQuantity"));
   const note = parseOptionalString(formData.get("note"));
-  const idempotencyKey = parseOptionalString(formData.get("idempotencyKey"));
+  const idempotencyKey = parseOptionalString(formData.get("idempotencyKey")) ?? "";
 
   try {
     await adjustBatchQuantity(supabase, {
