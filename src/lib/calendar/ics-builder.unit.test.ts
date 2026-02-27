@@ -369,6 +369,18 @@ describe("escapeText", () => {
   it("handles multiple special chars", () => {
     expect(escapeText("a,b;c\\d")).toBe("a\\,b\\;c\\\\d");
   });
+
+  it("escapes LF to \\n (RFC 5545 §3.3.11)", () => {
+    expect(escapeText("a\nb")).toBe("a\\nb");
+  });
+
+  it("escapes CR to \\n (RFC 5545 §3.3.11)", () => {
+    expect(escapeText("a\rb")).toBe("a\\nb");
+  });
+
+  it("escapes CRLF to a single \\n, not double (RFC 5545 §3.3.11)", () => {
+    expect(escapeText("a\r\nb")).toBe("a\\nb");
+  });
 });
 
 // ---------------------------------------------------------------------------

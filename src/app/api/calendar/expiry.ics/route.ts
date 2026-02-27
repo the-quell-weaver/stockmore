@@ -25,9 +25,10 @@ export async function GET() {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    // Fetch up to 200 batches (MVP upper bound for emergency-preparedness scale).
+    // Fetch up to 200 expiring batches (has_expiry filters at DB level before limiting,
+    // so the cap applies only to rows with expiry_date IS NOT NULL).
     // listStockBatches enforces org isolation via getMembership() + RLS.
-    const batches = await listStockBatches(supabase, { limit: 200 });
+    const batches = await listStockBatches(supabase, { limit: 200, has_expiry: true });
 
     const ics = buildExpiryIcs(batches);
 

@@ -63,14 +63,16 @@ function formatDtStamp(now: Date): string {
 
 /**
  * Escapes RFC 5545 TEXT property values.
- * Must escape: backslash, comma, semicolon (RFC 5545 §3.3.11).
+ * Must escape: backslash, comma, semicolon, and newlines (RFC 5545 §3.3.11).
  * Backslash must be escaped first to avoid double-escaping.
+ * CRLF, CR, and LF are all normalized to \n (the iCal literal escape).
  */
 export function escapeText(value: string): string {
   return value
     .replace(/\\/g, "\\\\") // \ → \\ (must be first)
     .replace(/,/g, "\\,") //  , → \,
-    .replace(/;/g, "\\;"); //  ; → \;
+    .replace(/;/g, "\\;") //  ; → \;
+    .replace(/\r\n|\r|\n/g, "\\n"); // embedded newlines → \n (RFC 5545 §3.3.11)
 }
 
 /**

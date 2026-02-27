@@ -329,6 +329,10 @@ export async function listStockBatches(
     .order("created_at", { ascending: true })
     .limit(validated.limit);
 
+  if (validated.hasExpiry) {
+    query = query.not("expiry_date", "is", null);
+  }
+
   if (validated.q) {
     query = query.ilike("items.name", `%${validated.q}%`);
   }
