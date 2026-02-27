@@ -1,11 +1,17 @@
 <!-- Generated from template.md for UC-09 -->
 
 # Feature: Notifications（到期 / 低庫存 Email 提醒：排程 + 去重）
-- **Doc**: docs/features/notifications.md
+- **Doc**: docs/features/uc/uc_09_notifications.md
 - **Status**: Draft
 - **PRD linkage**: UC-09（到期/低庫存 Email 提醒：依規則寄送並去重）
 - **Owner**: TBD
 - **Last updated**: 2026-02-19
+- **Priority updated**: 2026-02-27
+
+## Priority Update (2026-02-27)
+- 本次規格調整以「庫存到期通知」為主，MVP 最優先改為「匯出行事曆通知（Calendar export / subscribe）」。
+- 本文件中所有 Email 通知相關 MVP 描述，皆以本更新為準：Email 通知改列未來項目（future/backlog），不作為目前優先交付。
+- 低庫存通知不在本次優先交付範圍；後續可與 Email 通知一起規劃。
 
 ## 0. Summary
 本功能提供以 Email 為通路的「到期提醒」與「低庫存提醒」，協助使用者在平時維護防災物資：即將到期時提前通知、低於最低庫存時提醒補貨。提醒由排程工作（job）產生，必須具備**去重與頻率控制**以避免 spam；且所有判斷口徑需可由資料重播/重建支援未來雲端→自架→本地搬遷。MVP 預設規則：到期前 30/7/1 天提醒；低庫存每日最多一封（每個 org/倉庫）。
@@ -22,6 +28,10 @@
 
 ## 3. Scope
 ### 3.1 MVP scope (must-have)
+- S0: 到期通知通路改為「行事曆匯出」優先：
+  - 支援匯出到期提醒的行事曆資料（建議 iCalendar `.ics` 檔或等價格式）。
+  - 支援使用者在外部行事曆工具訂閱或匯入（Google Calendar / Apple Calendar / Outlook 等）。
+  - 行程內容至少包含：品項名稱、到期日、數量、存放點（可選）。
 - S1: 通知設定（Notification Settings）：
   - enable_expiry_email (bool)
   - enable_low_stock_email (bool)
@@ -38,6 +48,7 @@
   - 低庫存：列出低於門檻的品項（品名、目前總量、最低庫存）
 
 ### 3.2 Out of scope / Backlog hooks (future)
+- Email 通知（到期 / 低庫存）改列 future，不屬於目前優先交付。
 - 自訂提醒天數、提醒寄送時間、或對不同品項設不同規則。
 - 通知收件人管理（多人 org、不同角色不同收件人）。
 - 通知中心（站內訊息）、讀取/已讀狀態。
@@ -177,6 +188,8 @@
 - AC3: Given 啟用低庫存提醒 And 某 item current_stock < min_stock When job 執行 Then 寄出 1 封低庫存提醒 Email（可包含多個 items）。
 - AC4: Given 同 org/warehouse 今日已寄出低庫存提醒 When job 再次執行 Then 今日不再寄送第二封。
 - AC5: Given viewer When 嘗試修改通知設定 Then 被拒絕（FORBIDDEN）。
+- AC6: Given 使用者有快到期批次（today+30/7/1）When 匯出行事曆通知 Then 產生可匯入外部行事曆的檔案（`.ics` 或等價格式），且內容包含品項名稱與到期日。
+- AC7: Given 同一個 batch 與同一個 offset When 重複匯出行事曆 Then 事件識別資訊穩定（可去重更新、不重複新增無限筆事件）。
 
 ## 13. Test Strategy (feature-level)
 - Unit tests:
@@ -188,6 +201,7 @@
   - deliveries unique constraint 行為
 - Minimal e2e:
   - 建 item + 入庫含 expiry_date → 啟用提醒 → 觸發 job（測試環境可用手動 endpoint）→ 驗證 deliveries + email mock
+  - 建 item + 入庫含 expiry_date → 匯出行事曆 → 驗證 `.ics`（或等價）可被解析，且包含正確到期事件
 - Fixtures:
   - org + warehouse + user
   - items/batches/transactions
@@ -205,4 +219,3 @@
 - Q1: MVP 預設通知開關要預設開或關？（建議：預設關，使用者明確啟用後才寄送。）
 - Q2: 低庫存的聚合口徑是否以 warehouse 為範圍（建議：是），以及是否要排除 quantity=0 的批次？
 - Q3: Email 寄送服務選型（Supabase/Resend/SMTP）與測試環境的 mock 策略。
-

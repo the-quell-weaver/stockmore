@@ -16,7 +16,7 @@
 
 ### 2.1 建議流程（一般情況）
 
-1. **讀 spec**：對應的 `docs/features/<...>.md` 與相關 domain rules。
+1. **讀 spec**：對應的 `docs/features/current/<...>.md`（已完成功能現況）或 `docs/features/uc/<...>.md`（未完成需求），以及相關 domain rules。
 2. **先寫測試**：
 
    * domain rules（例如不可負庫存、去重 key、idempotency）
@@ -41,7 +41,8 @@
 
 本專案採用「規格拆小（features/UC）+ 文件最小化」策略。
 
-* `docs/features/uc_0X_*.md` 是功能需求與驗收的**主來源**。
+* `docs/features/current/*.md`（已完成現況）與 `docs/features/uc/*.md`（未完成需求）是功能需求與驗收的**主來源**。
+* `docs/features/archived/*.md` 僅作歷史參考，不作為當前行為依據。
 * 但在真正落地時，某些細節（schema/RLS/API/UX/錯誤碼）很難在一開始就完美定稿。
 
 因此我們採用 **Living Docs** 工作法：

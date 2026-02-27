@@ -1,7 +1,7 @@
 <!-- Generated from template.md for UC-01 -->
 
 # Feature: Auth & Onboarding（登入與預設倉庫建立/取得）
-- **Doc**: docs/features/uc_01_auth_onboarding.md
+- **Doc**: docs/features/archived/uc_01_auth_onboarding.md
 - **Status**: Implemented
 - **PRD linkage**: UC-01（使用者登入並建立/取得預設倉庫）
 - **Last updated**: 2026-02-22

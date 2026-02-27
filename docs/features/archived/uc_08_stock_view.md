@@ -1,7 +1,7 @@
 <!-- Generated from template.md for UC-08 -->
 
 # Feature: Stock View（庫存列表：平攤批次 + 基本搜尋）
-- **Doc**: docs/features/stock-view.md
+- **Doc**: docs/features/archived/uc_08_stock_view.md
 - **Status**: Draft
 - **PRD linkage**: UC-08（查看庫存列表：平攤顯示所有批次 + 基本搜尋）
 - **Owner**: TBD

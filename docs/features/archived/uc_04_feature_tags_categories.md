@@ -1,7 +1,7 @@
 <!-- Generated from template.md for UC-04 -->
 
 # Feature: Tags & Categories（標籤字典：新增/改名）
-- **Doc**: docs/features/tags-and-categories.md
+- **Doc**: docs/features/archived/uc_04_feature_tags_categories.md
 - **Status**: Draft
 - **PRD linkage**: UC-04（管理標籤字典：新增/改名）
 - **Last updated**: 2026-02-19

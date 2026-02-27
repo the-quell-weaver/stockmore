@@ -1,7 +1,7 @@
 <!-- Generated from template.md for UC-05 -->
 
 # Feature: Transactions — Inbound（入庫：直接新增庫存批次或增加數量）
-- **Doc**: docs/features/transactions-inbound.md
+- **Doc**: docs/features/archived/uc_05_feature_transactions_inbound.md
 - **Status**: Draft
 - **PRD linkage**: UC-05（入庫：直接新增庫存批次或增加數量，產生交易紀錄）
 - **Last updated**: 2026-02-19

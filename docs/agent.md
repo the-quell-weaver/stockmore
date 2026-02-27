@@ -29,6 +29,10 @@ MVP 必含：
 - Stock View：庫存列表（平攤 batch）+ 基本搜尋
 - 到期/低庫存 Email 提醒（排程 job + 去重）
 
+MVP 補充更新（2026-02-27）：
+- 通知優先序調整為：先做「庫存到期行事曆匯出（Calendar export / subscribe）」。
+- Email 通知（到期/低庫存）改列後續功能，不屬於目前最優先交付。
+
 MVP 明確不做（除非另開需求）：
 - Google Drive / Sheets 深度整合
 - 複雜 ERP（採購單、供應商、會計等）
@@ -60,8 +64,12 @@ Vercel Agent 負責：
 
 - `docs/PRD.md`
   - 全局概覽：目標、MVP 範圍、核心用例、全局驗收。
-- `docs/features/*.md`
-  - 每個用例一份 feature spec（MVP 的真實需求來源）。
+- `docs/features/current/*.md`
+  - 已實作功能的產品現況（對外行為/API 摘要）。
+- `docs/features/archived/*.md`
+  - 歷史實作規格（唯讀參考，不作為當前行為依據）。
+- `docs/features/uc/*.md`
+  - 尚未實作或進行中的 UC 規格。
 - `docs/DATA_MODEL.md`
   - 表結構、索引、約束、RLS 概述。
 - `docs/SECURITY.md`
@@ -93,7 +101,7 @@ Vercel Agent 負責：
 ## 6. 開發與驗收的最小迴圈（Agent Workflow）
 
 每個 PR 只做一件事，遵循：
-1. **讀 spec**：對應的 `docs/features/<...>.md`（與 PRD）
+1. **讀 spec**：已完成功能請讀 `docs/features/current/<...>.md`；未完成需求請讀 `docs/features/uc/<...>.md`，並搭配 PRD
 2. **寫測試（優先）**：
    - 能寫就先寫（尤其是 domain rules、RLS、jobs 去重）
    - 太小的改動可以直接實作，但至少要跑既有測試
@@ -142,12 +150,12 @@ Vercel Agent 負責：
 
 ## 10. 快速連結（常用規格）
 
-- UC-01 Auth & Onboarding：docs/features/uc_01_auth_onboarding.md
-- UC-02 Items：docs/features/uc_02_items.md
-- UC-03 Storage Locations：docs/features/uc_03_storage_locations.md
-- UC-04 Tags & Categories：docs/features/uc_04_feature_tags_categories.md
-- UC-05 Transactions - Inbound：docs/features/uc_05_feature_transactions_inbound.md
-- UC-06 Transactions - Consumption：docs/features/uc_06_feature_transactions_consumption.md
-- UC-07 Transactions - Adjustment：docs/features/uc_07_transactions_adjustment.md
-- UC-08 Stock View：docs/features/uc_08_stock_view.md
-- UC-09 Notifications：docs/features/uc_09_notifications.md
+- UC-01 Auth & Onboarding：docs/features/current/uc_01_auth_onboarding.md
+- UC-02 Items：docs/features/current/uc_02_items.md
+- UC-03 Storage Locations：docs/features/current/uc_03_storage_locations.md
+- UC-04 Tags & Categories：docs/features/current/uc_04_tags_categories.md
+- UC-05 Transactions - Inbound：docs/features/current/uc_05_transactions_inbound.md
+- UC-06 Transactions - Consumption：docs/features/current/uc_06_transactions_consumption.md
+- UC-07 Transactions - Adjustment：docs/features/current/uc_07_transactions_adjustment.md
+- UC-08 Stock View：docs/features/current/uc_08_stock_view.md
+- UC-09 Notifications：docs/features/uc/uc_09_notifications.md

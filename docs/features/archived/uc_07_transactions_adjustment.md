@@ -1,7 +1,7 @@
 <!-- Generated from template.md for UC-07 -->
 
 # Feature: Transactions — Adjustment（盤點/調整：指定批次實際數量）
-- **Doc**: docs/features/transactions-adjustment.md
+- **Doc**: docs/features/archived/uc_07_transactions_adjustment.md
 - **Status**: Draft
 - **PRD linkage**: UC-07（盤點/調整：手動選擇批次並直接指定實際數量，產生交易紀錄）
 - **Owner**: TBD
