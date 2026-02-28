@@ -12,9 +12,12 @@ export async function GET(request: NextRequest) {
     data: { user },
     error: getUserError,
   } = await supabase.auth.getUser();
-  // If we cannot determine the current session state, bail out rather than
-  // risk overwriting a real user's session with an anonymous one.
-  if (getUserError) {
+  // AuthSessionMissingError means no cookie is present — this is the normal
+  // state for a first-time visitor and should be treated as unauthenticated.
+  // Any other error means we cannot determine session state and we bail out
+  // rather than risk overwriting a real user's session.
+  const sessionMissing = getUserError?.name === "AuthSessionMissingError";
+  if (getUserError && !sessionMissing) {
     return finalizeResponse(
       NextResponse.redirect(
         new URL(
