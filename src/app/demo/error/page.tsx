@@ -24,7 +24,7 @@ export default async function DemoErrorPage({ searchParams }: Props) {
         <p className="text-sm text-muted-foreground">{message}</p>
         <div className="flex flex-col gap-2">
           <Button asChild>
-            <Link href="/demo">重試</Link>
+            <Link href="/demo" prefetch={false}>重試</Link>
           </Button>
           <Button asChild variant="outline">
             <Link href="/auth/sign-up">前往註冊</Link>

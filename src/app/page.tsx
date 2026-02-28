@@ -34,7 +34,7 @@ export default function Home() {
               <Link href="/stock">前往庫存</Link>
             </Button>
             <Button asChild variant="outline">
-              <Link href="/demo">試用 Demo</Link>
+              <Link href="/demo" prefetch={false}>試用 Demo</Link>
             </Button>
           </div>
         </section>
