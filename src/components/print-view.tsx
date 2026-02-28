@@ -1,3 +1,6 @@
+"use client";
+
+import { useState, useEffect } from "react";
 import type { BatchWithRefs } from "@/lib/transactions/service";
 import { renderQuantityBoxes } from "@/lib/print/quantity-boxes";
 
@@ -28,11 +31,16 @@ type PrintViewProps = {
 
 export function PrintView({ batches, warehouseName }: PrintViewProps) {
   const groups = groupBatchesByItem(batches);
-  const printDate = new Date().toLocaleDateString("zh-TW", {
-    year: "numeric",
-    month: "long",
-    day: "numeric",
-  });
+  const [printDate, setPrintDate] = useState("");
+  useEffect(() => {
+    setPrintDate(
+      new Date().toLocaleDateString("zh-TW", {
+        year: "numeric",
+        month: "long",
+        day: "numeric",
+      }),
+    );
+  }, []);
 
   return (
     <div className="hidden print:block p-8 font-sans text-black bg-white">
