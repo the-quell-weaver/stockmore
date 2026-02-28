@@ -32,3 +32,6 @@ additional_redirect_urls = [
 
 [auth.email]
 enable_confirmations = true
+
+[auth.anonymous_users]
+enabled = true
