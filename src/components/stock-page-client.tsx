@@ -17,6 +17,7 @@ import { queryKeys } from "@/lib/query-keys";
 import { endMark } from "@/lib/perf";
 import { StockSearch } from "@/components/stock-search";
 import { HamburgerMenu } from "@/components/hamburger-menu";
+import { PrintView } from "@/components/print-view";
 import { InboundModal } from "@/components/inbound-modal";
 import { ConsumeModal } from "@/components/consume-modal";
 import { AdjustModal } from "@/components/adjust-modal";
@@ -148,17 +149,27 @@ export function StockPageClient({ warehouseName }: StockPageClientProps) {
     : [];
 
   return (
-    <div className="mx-auto w-full max-w-xl p-4 md:p-6">
+    <>
+    <div className="mx-auto w-full max-w-xl p-4 md:p-6 print:hidden">
       {/* Header */}
       <div className="mb-4 flex items-start justify-between gap-2">
         <div>
           <h1 className="text-xl font-semibold">庫存列表</h1>
           <p className="text-sm text-muted-foreground">倉庫：{warehouseName}</p>
         </div>
-        <HamburgerMenu
-          onOpenLocations={() => setLocationsOpen(true)}
-          onOpenTags={() => setTagsOpen(true)}
-        />
+        <div className="flex shrink-0 items-center gap-1">
+          <button
+            onClick={() => window.print()}
+            disabled={batchesPending}
+            className="inline-flex h-8 items-center rounded border px-3 text-xs disabled:opacity-40"
+          >
+            列印
+          </button>
+          <HamburgerMenu
+            onOpenLocations={() => setLocationsOpen(true)}
+            onOpenTags={() => setTagsOpen(true)}
+          />
+        </div>
       </div>
 
       {/* Mode tabs */}
@@ -323,5 +334,7 @@ export function StockPageClient({ warehouseName }: StockPageClientProps) {
       />
 
     </div>
+    <PrintView batches={batches} warehouseName={warehouseName} />
+    </>
   );
 }
