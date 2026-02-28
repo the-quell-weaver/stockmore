@@ -1,7 +1,6 @@
 "use client";
 
 import { Menu } from "lucide-react";
-import Link from "next/link";
 import { useRouter } from "next/navigation";
 
 import { createClient } from "@/lib/supabase/client";
@@ -45,12 +44,6 @@ export function HamburgerMenu({
           <SheetTitle>選單</SheetTitle>
         </SheetHeader>
         <nav className="mt-6 flex flex-col gap-1">
-          <Link
-            href="/stock/items"
-            className="rounded px-3 py-2 text-sm hover:bg-accent"
-          >
-            品項管理
-          </Link>
           <button
             onClick={onOpenLocations}
             className="rounded px-3 py-2 text-left text-sm hover:bg-accent"

@@ -1,3 +1,8 @@
+/**
+ * @deprecated UC-11: This page is superseded by `/stock?mode=restock`.
+ * Navigation links have been removed. This file is kept for reference
+ * and will be deleted in a future cleanup PR.
+ */
 import Link from "next/link";
 import { Suspense } from "react";
 
