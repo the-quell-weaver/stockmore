@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
+import { DEMO_ERROR_CODES } from "@/lib/demo/errors";
 
 interface Props {
   searchParams: Promise<{ error?: string }>;
@@ -8,11 +9,11 @@ interface Props {
 export default async function DemoErrorPage({ searchParams }: Props) {
   const { error } = await searchParams;
   const message =
-    error === "SIGN_IN_FAILED"
+    error === DEMO_ERROR_CODES.SIGN_IN_FAILED
       ? "無法建立試用 session，請稍後再試。"
-      : error === "BOOTSTRAP_FAILED"
+      : error === DEMO_ERROR_CODES.BOOTSTRAP_FAILED
         ? "無法初始化試用資料，請稍後再試。"
-        : error === "SEED_FAILED"
+        : error === DEMO_ERROR_CODES.SEED_FAILED
           ? "無法載入示範資料，請稍後再試。"
           : "試用模式啟動失敗，請稍後再試。";
 
