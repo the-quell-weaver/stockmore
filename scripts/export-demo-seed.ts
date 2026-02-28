@@ -54,13 +54,18 @@ const admin = createClient(supabaseUrl, serviceRoleKey, {
   auth: { autoRefreshToken: false, persistSession: false },
 });
 
-/** Derive a stable ASCII ref key from a CJK item name. */
-function toRef(name: string): string {
-  return name
+/**
+ * Derive a stable ASCII ref key from an item name.
+ * ASCII names are slugified; non-ASCII names (e.g. CJK) fall back to
+ * "item_<index>" to avoid empty or colliding refs.
+ */
+function toRef(name: string, index: number): string {
+  const slug = name
     .toLowerCase()
     .replace(/[^a-z0-9]/g, "_")
     .replace(/_+/g, "_")
     .replace(/^_|_$/g, "");
+  return slug.length > 0 ? slug : `item_${index}`;
 }
 
 async function main() {
@@ -87,11 +92,11 @@ async function main() {
   }
 
   const itemRefById = new Map(
-    (items ?? []).map((i) => [i.id, toRef(i.name)]),
+    (items ?? []).map((i, idx) => [i.id, toRef(i.name, idx)]),
   );
 
-  const seedItems = (items ?? []).map((i) => ({
-    ref: toRef(i.name),
+  const seedItems = (items ?? []).map((i, idx) => ({
+    ref: toRef(i.name, idx),
     name: i.name,
     unit: i.unit,
     minStock: Number(i.min_stock),
