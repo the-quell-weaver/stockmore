@@ -29,7 +29,7 @@ export async function seedDemoData(supabase: SupabaseClient): Promise<SeedResult
     // Create batches
     for (const batch of SEED_BATCHES) {
       const itemId = itemIdByRef.get(batch.itemRef);
-      if (!itemId) continue;
+      if (!itemId) throw new Error(`Fixture error: no item found for itemRef "${batch.itemRef}"`);
       await createInboundBatch(supabase, {
         itemId,
         quantity: batch.quantity,
