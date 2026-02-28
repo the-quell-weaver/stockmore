@@ -355,17 +355,16 @@ export async function listItemsForPlanMode(
 
   if (batchError) throw new TransactionError(TRANSACTION_ERROR_CODES.INVALID_QUERY);
 
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
+  // Build today's date as a YYYY-MM-DD string in local time.
+  // Comparing strings directly avoids the TZ skew that occurs when
+  // new Date("YYYY-MM-DD") parses as UTC midnight while local midnight differs.
+  const now = new Date();
+  const todayStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
 
   const result: PlanModeItem[] = items.map((item) => {
     const itemBatches = (batches ?? []).filter((b) => b.item_id === item.id);
     const currentStock = itemBatches.reduce((sum, b) => {
-      if (
-        excludeExpired &&
-        b.expiry_date != null &&
-        new Date(b.expiry_date) < today
-      ) {
+      if (excludeExpired && b.expiry_date != null && b.expiry_date < todayStr) {
         return sum;
       }
       return sum + Number(b.quantity);
