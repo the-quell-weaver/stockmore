@@ -1,3 +1,7 @@
+/**
+ * @deprecated UC-11: actions for the deprecated /stock/items page.
+ * Do not add new functionality here. Will be removed in a future cleanup PR.
+ */
 "use server";
 
 import { revalidatePath } from "next/cache";
