@@ -284,6 +284,199 @@ function mapRpcError(error: PostgrestError): TransactionError {
 }
 
 // ---------------------------------------------------------------------------
+// UC-11: Plan Mode
+// ---------------------------------------------------------------------------
+
+export type PlanModeItem = {
+  id: string;
+  orgId: string;
+  name: string;
+  unit: string;
+  targetQuantity: number;
+  currentStock: number;
+  deficit: number;
+  completionPct: number;
+  note: string | null;
+};
+
+export type ListItemsForPlanModeInput = {
+  q?: string;
+  excludeExpired?: boolean;
+};
+
+// ---------------------------------------------------------------------------
+// UC-11: Restock Mode
+// ---------------------------------------------------------------------------
+
+export type ItemWithBatches = {
+  id: string;
+  orgId: string;
+  name: string;
+  unit: string;
+  note: string | null;
+  targetQuantity: number | null;
+  batches: BatchWithRefs[];
+};
+
+export type ListItemsWithBatchesInput = {
+  q?: string;
+};
+
+export async function listItemsForPlanMode(
+  supabase: SupabaseClient,
+  input: ListItemsForPlanModeInput = {},
+): Promise<PlanModeItem[]> {
+  const { q, excludeExpired = true } = input;
+  const membership = await getMembership(supabase);
+
+  let itemQuery = supabase
+    .from("items")
+    .select("id, org_id, name, unit, target_quantity, note")
+    .eq("org_id", membership.org_id)
+    .eq("is_deleted", false)
+    .not("target_quantity", "is", null)
+    .order("name", { ascending: true });
+
+  if (q) {
+    itemQuery = itemQuery.ilike("name", `%${q}%`);
+  }
+
+  const { data: items, error: itemsError } = await itemQuery;
+  if (itemsError) throw new TransactionError(TRANSACTION_ERROR_CODES.INVALID_QUERY);
+  if (!items || items.length === 0) return [];
+
+  const itemIds = items.map((i) => i.id);
+  const { data: batches, error: batchError } = await supabase
+    .from("batches")
+    .select("item_id, quantity, expiry_date")
+    .eq("org_id", membership.org_id)
+    .in("item_id", itemIds)
+    .gt("quantity", 0);
+
+  if (batchError) throw new TransactionError(TRANSACTION_ERROR_CODES.INVALID_QUERY);
+
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+
+  const result: PlanModeItem[] = items.map((item) => {
+    const itemBatches = (batches ?? []).filter((b) => b.item_id === item.id);
+    const currentStock = itemBatches.reduce((sum, b) => {
+      if (
+        excludeExpired &&
+        b.expiry_date != null &&
+        new Date(b.expiry_date) < today
+      ) {
+        return sum;
+      }
+      return sum + Number(b.quantity);
+    }, 0);
+
+    const targetQuantity = Number(item.target_quantity);
+    const deficit = Math.max(targetQuantity - currentStock, 0);
+    const completionPct =
+      targetQuantity > 0
+        ? Math.min((currentStock / targetQuantity) * 100, 100)
+        : 0;
+
+    return {
+      id: item.id,
+      orgId: item.org_id,
+      name: item.name,
+      unit: item.unit,
+      targetQuantity,
+      currentStock,
+      deficit,
+      completionPct,
+      note: item.note,
+    };
+  });
+
+  // Sort: incomplete first (completionPct < 100), then complete; alphabetical within each group
+  return result.sort((a, b) => {
+    const aComplete = a.completionPct >= 100 ? 1 : 0;
+    const bComplete = b.completionPct >= 100 ? 1 : 0;
+    if (aComplete !== bComplete) return aComplete - bComplete;
+    return a.name.localeCompare(b.name);
+  });
+}
+
+export async function listItemsWithBatches(
+  supabase: SupabaseClient,
+  input: ListItemsWithBatchesInput = {},
+): Promise<ItemWithBatches[]> {
+  const { q } = input;
+  const membership = await getMembership(supabase);
+
+  let itemQuery = supabase
+    .from("items")
+    .select("id, org_id, name, unit, note, target_quantity")
+    .eq("org_id", membership.org_id)
+    .eq("is_deleted", false)
+    .order("name", { ascending: true });
+
+  if (q) {
+    itemQuery = itemQuery.ilike("name", `%${q}%`);
+  }
+
+  const { data: items, error: itemsError } = await itemQuery;
+  if (itemsError) throw new TransactionError(TRANSACTION_ERROR_CODES.INVALID_QUERY);
+  if (!items || items.length === 0) return [];
+
+  const { data: batches, error: batchError } = await supabase
+    .from("batches")
+    .select(
+      `id, org_id, warehouse_id, item_id, quantity, expiry_date,
+       storage_location_id, tag_id, created_at, updated_at,
+       storage_locations(name), tags(name)`,
+    )
+    .eq("org_id", membership.org_id)
+    .gt("quantity", 0)
+    .order("expiry_date", { ascending: true, nullsFirst: false });
+
+  if (batchError) throw new TransactionError(TRANSACTION_ERROR_CODES.INVALID_QUERY);
+
+  const batchesByItemId = new Map<string, BatchWithRefs[]>();
+  for (const b of batches ?? []) {
+    const item = items.find((i) => i.id === b.item_id);
+    if (!item) continue;
+
+    const loc = b.storage_locations as unknown as { name: string } | null;
+    const tag = b.tags as unknown as { name: string } | null;
+
+    const batch: BatchWithRefs = {
+      id: b.id,
+      orgId: b.org_id,
+      warehouseId: b.warehouse_id,
+      itemId: b.item_id,
+      quantity: Number(b.quantity),
+      expiryDate: b.expiry_date,
+      storageLocationId: b.storage_location_id,
+      tagId: b.tag_id,
+      createdAt: b.created_at,
+      updatedAt: b.updated_at,
+      itemName: item.name,
+      itemUnit: item.unit,
+      storageLocationName: loc?.name ?? null,
+      tagName: tag?.name ?? null,
+    };
+
+    const existing = batchesByItemId.get(b.item_id) ?? [];
+    existing.push(batch);
+    batchesByItemId.set(b.item_id, existing);
+  }
+
+  return items.map((item) => ({
+    id: item.id,
+    orgId: item.org_id,
+    name: item.name,
+    unit: item.unit,
+    note: item.note,
+    targetQuantity: item.target_quantity != null ? Number(item.target_quantity) : null,
+    batches: batchesByItemId.get(item.id) ?? [],
+  }));
+}
+
+// ---------------------------------------------------------------------------
 // Stock View
 // ---------------------------------------------------------------------------
 
