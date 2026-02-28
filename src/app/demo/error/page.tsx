@@ -12,7 +12,9 @@ export default async function DemoErrorPage({ searchParams }: Props) {
       ? "無法建立試用 session，請稍後再試。"
       : error === "BOOTSTRAP_FAILED"
         ? "無法初始化試用資料，請稍後再試。"
-        : "試用模式啟動失敗，請稍後再試。";
+        : error === "SEED_FAILED"
+          ? "無法載入示範資料，請稍後再試。"
+          : "試用模式啟動失敗，請稍後再試。";
 
   return (
     <div className="flex min-h-svh w-full items-center justify-center p-6">
