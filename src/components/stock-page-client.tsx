@@ -1,8 +1,11 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
+
+import { cn } from "@/lib/utils";
 
 import type { BatchWithRefs } from "@/lib/transactions/service";
 import type { Item } from "@/lib/items/service";
@@ -17,6 +20,35 @@ import { ConsumeModal } from "@/components/consume-modal";
 import { AdjustModal } from "@/components/adjust-modal";
 import { LocationsModal } from "@/components/locations-modal";
 import { TagsModal } from "@/components/tags-modal";
+
+type StockMode = "consume" | "plan" | "restock";
+
+function ModeTabs({ currentMode }: { currentMode: StockMode }) {
+  const tabs: { mode: StockMode; label: string }[] = [
+    { mode: "consume", label: "消耗" },
+    { mode: "plan", label: "採買規劃" },
+    { mode: "restock", label: "入庫盤點" },
+  ];
+
+  return (
+    <div className="flex gap-0 border-b mb-4 sticky top-0 bg-background z-10">
+      {tabs.map((tab) => (
+        <Link
+          key={tab.mode}
+          href={`/stock?mode=${tab.mode}`}
+          className={cn(
+            "px-4 py-2 text-sm font-medium border-b-2 transition-colors",
+            currentMode === tab.mode
+              ? "border-primary text-primary"
+              : "border-transparent text-muted-foreground hover:text-foreground",
+          )}
+        >
+          {tab.label}
+        </Link>
+      ))}
+    </div>
+  );
+}
 
 type InboundTarget = {
   itemId: string;
@@ -53,6 +85,9 @@ type StockPageClientProps = {
 export function StockPageClient({ warehouseName }: StockPageClientProps) {
   const searchParams = useSearchParams();
   const q = searchParams.get("q") ?? undefined;
+  const rawMode = searchParams.get("mode");
+  const mode: StockMode =
+    rawMode === "plan" || rawMode === "restock" ? rawMode : "consume";
   const queryClient = useQueryClient();
 
   const { data: batches = [], isPending: batchesPending, isRefetching: isBatchesRefetching } = useQuery<BatchWithRefs[]>({
@@ -124,146 +159,156 @@ export function StockPageClient({ warehouseName }: StockPageClientProps) {
         />
       </div>
 
-      {/* Sticky search */}
-      <div className="sticky top-0 z-10 bg-background pb-3 pt-1">
-        <StockSearch defaultQ={q} />
-      </div>
+      {/* Mode tabs */}
+      <ModeTabs currentMode={mode} />
 
-      {!batchesPending && !hasBatches && !hasItems && (
-        <div className="rounded border border-dashed p-8 text-center">
-          <p className="text-sm text-muted-foreground">尚無庫存</p>
-          <p className="mt-1 text-xs text-muted-foreground">請先建立品項，再進行入庫</p>
-          <a
-            href="/stock/items"
-            className="mt-4 inline-flex h-9 items-center rounded border px-4 text-sm"
-          >
-            建立品項
-          </a>
-        </div>
-      )}
+      {/* Consume mode */}
+      {mode === "consume" && (
+        <>
+          {/* Sticky search */}
+          <div className="sticky top-10 z-10 bg-background pb-3 pt-1">
+            <StockSearch defaultQ={q} />
+          </div>
 
-      {!batchesPending && !hasBatches && isFiltered && (
-        <div className="rounded border border-dashed p-8 text-center">
-          <p className="text-sm text-muted-foreground">
-            找不到符合「{q}」的批次
-          </p>
-        </div>
-      )}
+          {!batchesPending && !hasBatches && !hasItems && (
+            <div className="rounded border border-dashed p-8 text-center">
+              <p className="text-sm text-muted-foreground">尚無庫存</p>
+              <p className="mt-1 text-xs text-muted-foreground">請先建立品項，再進行入庫</p>
+            </div>
+          )}
 
-      {(hasBatches || zeroStockItems.length > 0) && (
-        <ul className={`space-y-3 transition-opacity duration-200 ${isBatchesRefetching ? "opacity-60" : ""}`}>
-          {groups.map((group) => (
-            <li key={group.itemId} className="rounded border">
-              {/* Item header row */}
-              <div className="flex items-center justify-between gap-2 border-b px-3 py-2">
-                <span className="font-medium">{group.itemName}</span>
-                <button
-                  onClick={() =>
-                    setInboundTarget({
-                      itemId: group.itemId,
-                      itemName: group.itemName,
-                      itemUnit: group.itemUnit,
-                    })
-                  }
-                  className="inline-flex h-7 items-center rounded bg-primary px-3 text-xs text-primary-foreground"
-                >
-                  入庫
-                </button>
-              </div>
+          {!batchesPending && !hasBatches && isFiltered && (
+            <div className="rounded border border-dashed p-8 text-center">
+              <p className="text-sm text-muted-foreground">
+                找不到符合「{q}」的批次
+              </p>
+            </div>
+          )}
 
-              {/* Batch sub-rows */}
-              <ul>
-                {group.batches.map((batch) => {
-                  const metaParts: string[] = [];
-                  if (batch.expiryDate) metaParts.push(`到期：${batch.expiryDate}`);
-                  if (batch.storageLocationName) metaParts.push(batch.storageLocationName);
-                  if (batch.tagName) metaParts.push(batch.tagName);
-
-                  return (
-                    <li
-                      key={batch.id}
-                      className="flex items-center justify-between gap-2 px-3 py-2 last:rounded-b"
+          {(hasBatches || zeroStockItems.length > 0) && (
+            <ul className={`space-y-3 transition-opacity duration-200 ${isBatchesRefetching ? "opacity-60" : ""}`}>
+              {groups.map((group) => (
+                <li key={group.itemId} className="rounded border">
+                  {/* Item header row */}
+                  <div className="flex items-center justify-between gap-2 border-b px-3 py-2">
+                    <span className="font-medium">{group.itemName}</span>
+                    <button
+                      onClick={() =>
+                        setInboundTarget({
+                          itemId: group.itemId,
+                          itemName: group.itemName,
+                          itemUnit: group.itemUnit,
+                        })
+                      }
+                      className="inline-flex h-7 items-center rounded bg-primary px-3 text-xs text-primary-foreground"
                     >
-                      <div>
-                        <span className="text-lg font-semibold tabular-nums">
-                          {batch.quantity}
-                          <span className="ml-1 text-xs font-normal text-muted-foreground">
-                            {batch.itemUnit}
-                          </span>
-                        </span>
-                        {metaParts.length > 0 ? (
-                          <p className="mt-0.5 text-xs text-muted-foreground">
-                            {metaParts.join(" · ")}
-                          </p>
-                        ) : null}
-                      </div>
-                      <div className="flex shrink-0 gap-1">
-                        <button
-                          onClick={() => setConsumeTarget(batch)}
-                          className="inline-flex h-7 items-center rounded border px-2 text-xs"
-                        >
-                          消耗
-                        </button>
-                        <button
-                          onClick={() => setAdjustTarget(batch)}
-                          className="inline-flex h-7 items-center rounded border px-2 text-xs"
-                        >
-                          盤點
-                        </button>
-                      </div>
-                    </li>
-                  );
-                })}
-              </ul>
-            </li>
-          ))}
+                      入庫
+                    </button>
+                  </div>
 
-          {zeroStockItems.map((item) => (
-            <li key={item.id} className="rounded border">
-              <div className="flex items-center justify-between gap-2 px-3 py-2">
-                <span className="font-medium text-muted-foreground">{item.name}</span>
-                <button
-                  onClick={() =>
-                    setInboundTarget({
-                      itemId: item.id,
-                      itemName: item.name,
-                      itemUnit: item.unit,
-                    })
-                  }
-                  className="inline-flex h-7 items-center rounded bg-primary px-3 text-xs text-primary-foreground"
-                >
-                  入庫
-                </button>
-              </div>
-            </li>
-          ))}
-        </ul>
+                  {/* Batch sub-rows */}
+                  <ul>
+                    {group.batches.map((batch) => {
+                      const metaParts: string[] = [];
+                      if (batch.expiryDate) metaParts.push(`到期：${batch.expiryDate}`);
+                      if (batch.storageLocationName) metaParts.push(batch.storageLocationName);
+                      if (batch.tagName) metaParts.push(batch.tagName);
+
+                      return (
+                        <li
+                          key={batch.id}
+                          className="flex items-center justify-between gap-2 px-3 py-2 last:rounded-b"
+                        >
+                          <div>
+                            <span className="text-lg font-semibold tabular-nums">
+                              {batch.quantity}
+                              <span className="ml-1 text-xs font-normal text-muted-foreground">
+                                {batch.itemUnit}
+                              </span>
+                            </span>
+                            {metaParts.length > 0 ? (
+                              <p className="mt-0.5 text-xs text-muted-foreground">
+                                {metaParts.join(" · ")}
+                              </p>
+                            ) : null}
+                          </div>
+                          <div className="flex shrink-0 gap-1">
+                            <button
+                              onClick={() => setConsumeTarget(batch)}
+                              className="inline-flex h-7 items-center rounded border px-2 text-xs"
+                            >
+                              消耗
+                            </button>
+                            <button
+                              onClick={() => setAdjustTarget(batch)}
+                              className="inline-flex h-7 items-center rounded border px-2 text-xs"
+                            >
+                              盤點
+                            </button>
+                          </div>
+                        </li>
+                      );
+                    })}
+                  </ul>
+                </li>
+              ))}
+
+              {zeroStockItems.map((item) => (
+                <li key={item.id} className="rounded border">
+                  <div className="flex items-center justify-between gap-2 px-3 py-2">
+                    <span className="font-medium text-muted-foreground">{item.name}</span>
+                    <button
+                      onClick={() =>
+                        setInboundTarget({
+                          itemId: item.id,
+                          itemName: item.name,
+                          itemUnit: item.unit,
+                        })
+                      }
+                      className="inline-flex h-7 items-center rounded bg-primary px-3 text-xs text-primary-foreground"
+                    >
+                      入庫
+                    </button>
+                  </div>
+                </li>
+              ))}
+            </ul>
+          )}
+
+          <InboundModal
+            open={!!inboundTarget}
+            itemId={inboundTarget?.itemId ?? ""}
+            itemName={inboundTarget?.itemName ?? ""}
+            itemUnit={inboundTarget?.itemUnit ?? ""}
+            locations={locations}
+            tags={tags}
+            onClose={() => setInboundTarget(null)}
+            onSuccess={() => handleSuccess("inbound")}
+          />
+
+          <ConsumeModal
+            open={!!consumeTarget}
+            batch={consumeTarget}
+            onClose={() => setConsumeTarget(null)}
+            onSuccess={() => handleSuccess("consume")}
+          />
+
+          <AdjustModal
+            open={!!adjustTarget}
+            batch={adjustTarget}
+            onClose={() => setAdjustTarget(null)}
+            onSuccess={() => handleSuccess("adjust")}
+          />
+        </>
       )}
 
-      <InboundModal
-        open={!!inboundTarget}
-        itemId={inboundTarget?.itemId ?? ""}
-        itemName={inboundTarget?.itemName ?? ""}
-        itemUnit={inboundTarget?.itemUnit ?? ""}
-        locations={locations}
-        tags={tags}
-        onClose={() => setInboundTarget(null)}
-        onSuccess={() => handleSuccess("inbound")}
-      />
+      {mode === "plan" && (
+        <div className="text-muted-foreground text-sm p-4">採買規劃模式（Task 9 中實作）</div>
+      )}
 
-      <ConsumeModal
-        open={!!consumeTarget}
-        batch={consumeTarget}
-        onClose={() => setConsumeTarget(null)}
-        onSuccess={() => handleSuccess("consume")}
-      />
-
-      <AdjustModal
-        open={!!adjustTarget}
-        batch={adjustTarget}
-        onClose={() => setAdjustTarget(null)}
-        onSuccess={() => handleSuccess("adjust")}
-      />
+      {mode === "restock" && (
+        <div className="text-muted-foreground text-sm p-4">入庫盤點模式（Task 10 中實作）</div>
+      )}
 
       <LocationsModal
         open={locationsOpen}
