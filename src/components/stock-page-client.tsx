@@ -6,6 +6,8 @@ import { useSearchParams } from "next/navigation";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 
 import { cn } from "@/lib/utils";
+import { PlanModeView } from "@/components/plan-mode-view";
+import { RestockModeView } from "@/components/restock-mode-view";
 
 import type { BatchWithRefs } from "@/lib/transactions/service";
 import type { Item } from "@/lib/items/service";
@@ -302,13 +304,9 @@ export function StockPageClient({ warehouseName }: StockPageClientProps) {
         </>
       )}
 
-      {mode === "plan" && (
-        <div className="text-muted-foreground text-sm p-4">採買規劃模式（Task 9 中實作）</div>
-      )}
+      {mode === "plan" && <PlanModeView />}
 
-      {mode === "restock" && (
-        <div className="text-muted-foreground text-sm p-4">入庫盤點模式（Task 10 中實作）</div>
-      )}
+      {mode === "restock" && <RestockModeView />}
 
       <LocationsModal
         open={locationsOpen}
