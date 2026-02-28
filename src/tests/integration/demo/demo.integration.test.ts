@@ -71,15 +71,18 @@ async function signInAnonymously() {
 }
 
 async function cleanupAnonUser(userId: string) {
-  const { data: memberships } = await adminClient
+  const memberships = await adminClient
     .from("org_memberships")
     .select("org_id")
     .eq("user_id", userId);
-  const orgIds = (memberships ?? []).map((r) => r.org_id).filter(Boolean);
+  expect(memberships.error).toBeNull();
+  const orgIds = (memberships.data ?? []).map((r) => r.org_id).filter(Boolean);
   if (orgIds.length > 0) {
-    await adminClient.from("orgs").delete().in("id", orgIds);
+    const deleteOrgs = await adminClient.from("orgs").delete().in("id", orgIds);
+    expect(deleteOrgs.error).toBeNull();
   }
-  await adminClient.auth.admin.deleteUser(userId);
+  const deleted = await adminClient.auth.admin.deleteUser(userId);
+  expect(deleted.error).toBeNull();
 }
 
 describe("seedDemoData integration (UC-13)", () => {
