@@ -29,8 +29,8 @@ test("authenticated user: /demo redirects to /stock without clearing their sessi
 }) => {
   await page.goto("/demo");
   await expect(page).toHaveURL(/\/stock/, { timeout: 10_000 });
-  // Verify they weren't signed out (stock page renders correctly)
-  await expect(page.getByRole("heading", { name: /stock/i })).toBeVisible({
+  // Verify they weren't signed out (stock page heading renders correctly)
+  await expect(page.getByRole("heading", { name: "庫存列表" })).toBeVisible({
     timeout: 5_000,
   });
 });
