@@ -10,7 +10,20 @@ export async function GET(request: NextRequest) {
   // AC5: Redirect authenticated non-anonymous users to /stock (preserve session)
   const {
     data: { user },
+    error: getUserError,
   } = await supabase.auth.getUser();
+  // If we cannot determine the current session state, bail out rather than
+  // risk overwriting a real user's session with an anonymous one.
+  if (getUserError) {
+    return finalizeResponse(
+      NextResponse.redirect(
+        new URL(
+          `/demo/error?error=${DEMO_ERROR_CODES.SIGN_IN_FAILED}`,
+          request.url,
+        ),
+      ),
+    );
+  }
   if (user && !user.is_anonymous) {
     return finalizeResponse(
       NextResponse.redirect(new URL("/stock", request.url)),
