@@ -38,7 +38,8 @@ export async function seedDemoData(supabase: SupabaseClient): Promise<SeedResult
     }
 
     return { ok: true };
-  } catch {
+  } catch (err) {
+    console.error("[seedDemoData] failed:", err);
     return { ok: false, error: DEMO_ERROR_CODES.SEED_FAILED };
   }
 }
