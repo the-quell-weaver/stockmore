@@ -160,7 +160,8 @@ export function StockPageClient({ warehouseName }: StockPageClientProps) {
         <div className="flex shrink-0 items-center gap-1">
           <button
             onClick={() => window.print()}
-            className="inline-flex h-8 items-center rounded border px-3 text-xs"
+            disabled={batchesPending}
+            className="inline-flex h-8 items-center rounded border px-3 text-xs disabled:opacity-40"
           >
             列印
           </button>
