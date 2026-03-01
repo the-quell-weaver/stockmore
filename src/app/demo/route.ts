@@ -4,39 +4,29 @@ import { DEMO_ERROR_CODES } from "@/lib/demo/errors";
 import { seedDemoData } from "@/lib/demo/seed-demo-data";
 import { createRouteHandlerClient } from "@/lib/supabase/server";
 
+// This route reads cookies and performs server-side auth; prevent static prerendering.
+export const dynamic = "force-dynamic";
+
 export async function GET(request: NextRequest) {
   const { supabase, finalizeResponse } = createRouteHandlerClient(request);
 
-  // AC5: Redirect authenticated non-anonymous users to /stock (preserve session)
   const {
     data: { user },
     error: getUserError,
   } = await supabase.auth.getUser();
-  // AuthSessionMissingError means no cookie is present — this is the normal
-  // state for a first-time visitor and should be treated as unauthenticated.
-  // Any other error means we cannot determine session state and we bail out
-  // rather than risk overwriting a real user's session.
-  const sessionMissing = getUserError?.name === "AuthSessionMissingError";
-  if (getUserError && !sessionMissing) {
-    return finalizeResponse(
-      NextResponse.redirect(
-        new URL(
-          `/demo/error?error=${DEMO_ERROR_CODES.SIGN_IN_FAILED}`,
-          request.url,
-        ),
-      ),
-    );
-  }
-  if (user && !user.is_anonymous) {
+
+  // AC5: Only redirect to /stock for a confirmed non-anonymous user.
+  // Any getUserError (session missing, stale, or revoked cookie) means the
+  // session state is indeterminate — fall through to sign-out + anonymous sign-in.
+  if (!getUserError && user && !user.is_anonymous) {
     return finalizeResponse(
       NextResponse.redirect(new URL("/stock", request.url)),
     );
   }
 
-  // R1: Always create a fresh anonymous session — sign out any existing anon session
-  if (user?.is_anonymous) {
-    await supabase.auth.signOut();
-  }
+  // R1: Clear any existing session (unknown, stale, or anonymous) before
+  // creating a fresh anonymous session. No-op when no session exists.
+  await supabase.auth.signOut();
 
   const { error: signInError } = await supabase.auth.signInAnonymously();
   if (signInError) {

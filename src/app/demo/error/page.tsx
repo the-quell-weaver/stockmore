@@ -2,6 +2,9 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { DEMO_ERROR_CODES } from "@/lib/demo/errors";
 
+// searchParams is dynamic; prevent static prerendering.
+export const dynamic = "force-dynamic";
+
 interface Props {
   searchParams: Promise<{ error?: string }>;
 }
