@@ -29,9 +29,14 @@ export default function Home() {
             </p>
           </div>
 
-          <Button asChild>
-            <Link href="/stock">前往庫存</Link>
-          </Button>
+          <div className="flex flex-wrap gap-3">
+            <Button asChild>
+              <Link href="/stock">前往庫存</Link>
+            </Button>
+            <Button asChild variant="outline">
+              <Link href="/demo" prefetch={false}>試用 Demo</Link>
+            </Button>
+          </div>
         </section>
 
         <footer className="mt-12 flex justify-end border-t pt-4">

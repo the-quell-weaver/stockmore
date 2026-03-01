@@ -56,6 +56,8 @@
 | consumeFromBatch | Server Action | `consumeFromBatchAction` | Authenticated (owner/editor) | 從批次扣減消耗數量 | UC_06 |
 | adjustBatchQuantity | Server Action | `adjustBatchQuantityAction` | Authenticated (owner/editor) | 指定批次實際數量（盤點調整） | UC_07 |
 | exportExpiryCalendar | Route Handler | `GET /api/calendar/expiry.ics` | Authenticated | 匯出到期提醒事件為 iCalendar 格式（RFC 5545） | UC_09 |
+| demoInit | Route Handler | `GET /demo` | Public (anonymous sign-in server-side) | 建立匿名 session、bootstrap org、seed 示範資料、導向 `/stock?mode=consume` | UC_13 |
+| seedDemoData | Server utility | `seedDemoData(supabase)` | Anonymous session | 向呼叫者 org 寫入示範物品與批次（idempotent） | UC_13 |
 
 ## 3. 介面規格（逐項）
 
@@ -330,6 +332,41 @@
 - MVP 上限：最多 200 筆 batch（`listStockBatches({ limit: 200 })`）；未來可改為無限制查詢。
 - 實作：`src/app/api/calendar/expiry.ics/route.ts` → `buildExpiryIcs()` @ `src/lib/calendar/ics-builder.ts`。
 - 測試：`src/lib/calendar/ics-builder.unit.test.ts`、`src/tests/integration/calendar/calendar.integration.test.ts`。
+
+### 3.10 `GET /demo` (UC-13)
+
+**Type**
+- Route Handler
+
+**Purpose**
+- 提供訪客免註冊試用入口。伺服器端建立匿名 session → bootstrap 預設 org/warehouse → seed 示範資料 → 導向 `/stock?mode=consume`。
+
+**Auth**
+- Public（無需事先登入）。匿名 session 在伺服器端透過 `supabase.auth.signInAnonymously()` 建立，session cookie 由 `finalizeResponse` 寫入。
+
+**Request**
+- Method: `GET /demo`
+- No body / query params
+
+**Response**
+- 307 redirect to `/stock?mode=consume`（成功）
+- 307 redirect to `/demo/error?error=SIGN_IN_FAILED`（匿名登入失敗）
+- 307 redirect to `/demo/error?error=BOOTSTRAP_FAILED`（org bootstrap 失敗）
+- 307 redirect to `/demo/error?error=SEED_FAILED`（示範資料寫入失敗）
+- AC5 exception: 已登入（非匿名）使用者 → 307 redirect to `/stock`（session 不受影響）
+
+**Errors**
+- `SIGN_IN_FAILED`
+- `BOOTSTRAP_FAILED`
+- `SEED_FAILED`
+
+**Notes**
+- R1: 每次進入 `/demo` 都重新建立匿名 session（若已有匿名 session 先 `signOut`，確保 demo 資料隔離）。
+- Idempotency: `seedDemoData` 先以 `listItems` 檢查，若 org 已有資料則直接回傳 `{ ok: true }`，不重複插入。
+- 示範資料來源: `src/lib/demo/seed-fixture.ts`（6 物品、12 批次）。
+- 實作: `src/app/demo/route.ts`、`src/lib/demo/seed-demo-data.ts`。
+- 錯誤頁: `src/app/demo/error/page.tsx`。
+- 測試: `src/lib/demo/seed-demo-data.unit.test.ts`（unit, 4 tests）、`src/tests/integration/demo/demo.integration.test.ts`（integration, 3 tests）、`src/e2e/demo.spec.ts`（E2E, 2 tests）。
 
 ### 3.x `<name>`
 
