@@ -1,6 +1,6 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { createItem, listItems } from "@/lib/items/service";
-import { createInboundBatch } from "@/lib/transactions/service";
+import { createInboundBatch, listStockBatches } from "@/lib/transactions/service";
 import { DEMO_ERROR_CODES } from "./errors";
 import { SEED_BATCHES, SEED_ITEMS } from "./seed-fixture";
 
@@ -10,11 +10,14 @@ export async function seedDemoData(supabase: SupabaseClient): Promise<SeedResult
   try {
     const existing = await listItems(supabase);
 
-    // AC6 / R2: All seed items are present — org is fully seeded; skip.
-    // Using SEED_ITEMS.length (not > 0) so a partial-item failure (fewer items
-    // than expected) is still retried rather than silently treated as done.
+    // AC6 / R2: fully seeded check — all items AND all expected batches present.
+    // Checking both counts prevents a partial-batch failure (all items created,
+    // some batches not) from being silently treated as done.
     if (existing.length >= SEED_ITEMS.length) {
-      return { ok: true };
+      const batches = await listStockBatches(supabase, { limit: SEED_BATCHES.length + 1 });
+      if (batches.length >= SEED_BATCHES.length) {
+        return { ok: true };
+      }
     }
 
     // Build ref → id map, reusing any items already created in a prior partial
@@ -36,13 +39,11 @@ export async function seedDemoData(supabase: SupabaseClient): Promise<SeedResult
       itemIdByRef.set(seedItem.ref, created.id);
     }
 
-    // Create batches only for items that were newly created in this run.
-    // Pre-existing items keep whatever batches they already have.
-    const newRefs = new Set(
-      SEED_ITEMS.filter((si) => !existingByName.has(si.name)).map((si) => si.ref),
-    );
+    // Create batches for all seed items. When recovering from a partial-batch
+    // failure (all items exist but some batches are missing), we create batches
+    // for every item including pre-existing ones. Some items may end up with
+    // extra stock, which is acceptable for a demo org.
     for (const batch of SEED_BATCHES) {
-      if (!newRefs.has(batch.itemRef)) continue;
       const itemId = itemIdByRef.get(batch.itemRef);
       if (!itemId) throw new Error(`Fixture error: no item found for itemRef "${batch.itemRef}"`);
       await createInboundBatch(supabase, {

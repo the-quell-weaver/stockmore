@@ -1,15 +1,13 @@
 import Link from "next/link";
+import { Suspense } from "react";
 import { Button } from "@/components/ui/button";
 import { DEMO_ERROR_CODES } from "@/lib/demo/errors";
 
-// searchParams is dynamic; prevent static prerendering.
-export const dynamic = "force-dynamic";
-
-interface Props {
+async function ErrorMessage({
+  searchParams,
+}: {
   searchParams: Promise<{ error?: string }>;
-}
-
-export default async function DemoErrorPage({ searchParams }: Props) {
+}) {
   const { error } = await searchParams;
   const message =
     error === DEMO_ERROR_CODES.SIGN_IN_FAILED
@@ -19,12 +17,21 @@ export default async function DemoErrorPage({ searchParams }: Props) {
         : error === DEMO_ERROR_CODES.SEED_FAILED
           ? "無法載入示範資料，請稍後再試。"
           : "試用模式啟動失敗，請稍後再試。";
+  return <p className="text-sm text-muted-foreground">{message}</p>;
+}
 
+export default function DemoErrorPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ error?: string }>;
+}) {
   return (
     <div className="flex min-h-svh w-full items-center justify-center p-6">
       <div className="w-full max-w-sm space-y-4 text-center">
         <h1 className="text-xl font-semibold">試用模式發生錯誤</h1>
-        <p className="text-sm text-muted-foreground">{message}</p>
+        <Suspense>
+          <ErrorMessage searchParams={searchParams} />
+        </Suspense>
         <div className="flex flex-col gap-2">
           <Button asChild>
             <Link href="/demo" prefetch={false}>重試</Link>

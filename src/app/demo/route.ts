@@ -4,9 +4,6 @@ import { DEMO_ERROR_CODES } from "@/lib/demo/errors";
 import { seedDemoData } from "@/lib/demo/seed-demo-data";
 import { createRouteHandlerClient } from "@/lib/supabase/server";
 
-// This route reads cookies and performs server-side auth; prevent static prerendering.
-export const dynamic = "force-dynamic";
-
 export async function GET(request: NextRequest) {
   const { supabase, finalizeResponse } = createRouteHandlerClient(request);
 
